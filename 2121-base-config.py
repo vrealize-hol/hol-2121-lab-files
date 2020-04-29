@@ -8,6 +8,8 @@
 # azten = "put your azure tenant id here"
 # azappkey = "put your azure application key here"
 # azappid = "put your azure application id here"
+## also change the value below to True
+local_creds = True
 
 import json
 import requests
@@ -26,10 +28,24 @@ import sys
 import urllib3
 urllib3.disable_warnings()
 
+##### Remove from final pod
+awsid = os.getenv('temp_awsid')
+awssec = os.getenv('temp_awssec')
+azsub = os.getenv('temp_azsub')
+azten = os.getenv('temp_azten')
+azappkey = os.getenv('temp_azappkey')
+azappid = os.getenv('temp_azappid')
+######
+print(azappid)
 
-d_id = os.getenv('D_ID')
-d_sec = os.getenv('D_SEC')
-d_reg = os.getenv('D_REG')
+
+
+if local_creds != True:
+    d_id = os.getenv('D_ID')
+    d_sec = os.getenv('D_SEC')
+    d_reg = os.getenv('D_REG')
+    
+
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
 
