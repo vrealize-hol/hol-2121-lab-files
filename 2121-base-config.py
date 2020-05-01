@@ -811,3 +811,5 @@ create_aws_flavor()
 print('Creating image profiles')
 create_azure_image()
 create_aws_image()
+
+#end
