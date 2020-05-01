@@ -35,6 +35,9 @@ azsub = os.getenv('temp_azsub')
 azten = os.getenv('temp_azten')
 azappkey = os.getenv('temp_azappkey')
 azappid = os.getenv('temp_azappid')
+######
+print(azappid)
+
 
 
 if local_creds != True:
@@ -198,29 +201,6 @@ def vra_ready():  # this is a proxy to test whether vRA is ready or not since th
         ready = False
     return(ready)
 
-def create_vsphere_ca():
-    api_url = '{0}iaas/api/cloud-accounts-vsphere'.format(api_url_base)
-    data =  {
-                "hostName": "vcsa-01a.corp.local",
-                "acceptSelfSignedCertificate": "true",
-                "password": "VMware1!",
-                "createDefaultZones" : "true",
-                "name": "vSphere Cloud Account",
-                "description": "vSphere Cloud Account",
-                "regionIds": ["Datacenter:datacenter-21"],
-                "username": "administrator@corp.local",
-                "tags": [
-                        ]              
-            }
-    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
-    if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
-        print('- Successfully Created vSphere Cloud Account')
-    else:
-        print('- Failed to Create the vSphere Cloud Account')
-        return None
-
-
 def create_aws_ca():
     api_url = '{0}iaas/api/cloud-accounts-aws'.format(api_url_base)
     data =  {
@@ -231,9 +211,18 @@ def create_aws_ca():
 
                 },
                 "regionIds": [
-                    "us-west-1"
+                    "us-west-1",
+                    "us-west-2"
                 ],
                 "tags": [
+                            {
+                                "key": "hol.cloud.account.source", 
+                                "value": "aws"
+                            },
+                            {
+                                "key" : "hol.cloud.account.owner", 
+                                "value" : "hol_project"
+                            }
                         ],
                 "createDefaultZones" : "true",
                 "name": "AWS Cloud Account"
@@ -259,6 +248,14 @@ def create_azure_ca():
                   "westus"
                ],
                "tags": [
+                            {
+                                "key": "hol.cloud.account.source", 
+                                "value": "azure"
+                            },
+                            {
+                                "key" : "hol.cloud.account.owner", 
+                                "value" : "hol_project"
+                            }
                         ],
               "createDefaultZones": "true"
             }
@@ -294,7 +291,7 @@ def get_right_czid_vsphere(czid):
         print('- Failed to get the right vSphere cloud zone ID')
         return None
 
-def get_right_czid_aws(czid):
+def get_right_czid_aws_west1(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,czid)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
@@ -304,7 +301,7 @@ def get_right_czid_aws(czid):
             if x == 'AWS Cloud Account / us-west-1':
                 return czid
     else:
-        print('- Failed to get the right AWS cloud zone ID')
+        print('- Failed to get the right AWS west 1 cloud zone ID')
         return None
 
 def get_right_czid_aws_west2(czid):
@@ -384,7 +381,7 @@ def get_right_projid_rp(projid):
         print('- Failed to get the right project ID')
         return None
 
-def update_project(proj_Ids,vsphere,aws,azure):
+def update_project(proj_Ids,vsphere,aws1,aws2,azure):
     if proj_Ids is not None:
         for x in proj_Ids:
             project_id = get_right_projid(x)
@@ -399,7 +396,12 @@ def update_project(proj_Ids,vsphere,aws,azure):
                                             "priority": 1
                                         },
                                         {
-                                            "zoneId": aws,
+                                            "zoneId": aws1,
+                                            "maxNumberInstances": 10,
+                                            "priority": 1
+                                        },
+                                        {
+                                            "zoneId": aws2,
                                             "maxNumberInstances": 10,
                                             "priority": 1
                                         },
@@ -418,7 +420,7 @@ def update_project(proj_Ids,vsphere,aws,azure):
                     print('- Failed to add cloud zones to HOL Project')
                     return None
 
-def update_project_rp(proj_Ids,vsphere,aws,azure):
+def update_project_rp(proj_Ids,vsphere,aws1,aws2,azure):
     if proj_Ids is not None:
         for x in proj_Ids:
             project_id = get_right_projid_rp(x)
@@ -433,7 +435,7 @@ def update_project_rp(proj_Ids,vsphere,aws,azure):
                                             "priority": 1
                                         },
                                         {
-                                            "zoneId": aws,
+                                            "zoneId": aws1,
                                             "maxNumberInstances": 10,
                                             "priority": 1
                                         }
@@ -458,7 +460,11 @@ def tag_vsphere_cz(cz_Ids):
                             "name": "vRA-Managed vSphere Compute",
                         	"tags": [
                                         {
-                                            "key": "cloud",
+                                            "key": "hol.cloud.zone.env",
+                                            "value": "dev"
+                                        },
+                                        {
+                                            "key": "hol.cloud.zone.platform",
                                             "value": "vsphere"
                                         }
                                     ],
@@ -478,17 +484,24 @@ def tag_vsphere_cz(cz_Ids):
                     print('- Failed to tag vSphere cloud zone')
                     return None
 
-def tag_aws_cz(cz_Ids):
+def tag_aws_cz_west_1(cz_Ids):
     if cz_Ids is not None:
         for x in cz_Ids:
-            cloudzone_id = get_right_czid_aws(x)
+            cloudzone_id = get_right_czid_aws_west1(x)
             if cloudzone_id is not None:
                 api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
                 data =  {
                             "name": "AWS Cloud Zone / us-west-1",
                         	"tags": [
                                         {
-                                            "key": "cloud",
+                                            "key": "hol.zones.cloud.aws.west"
+                                        },
+                                        {
+                                            "key": "hol.cloud.zone.env",
+                                            "value": "dev"
+                                        },
+                                        {
+                                            "key": "hol.cloud.zone.platform",
                                             "value": "aws"
                                         }
                                     ]
@@ -502,6 +515,33 @@ def tag_aws_cz(cz_Ids):
                     print('- Failed to tag AWS Cloud Zone - us-west-1')
                     return None
 
+def tag_aws_cz_west_2(cz_Ids):
+    if cz_Ids is not None:
+        for x in cz_Ids:
+            cloudzone_id = get_right_czid_aws_west2(x)
+            if cloudzone_id is not None:
+                api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
+                data =  {
+                            "name": "AWS Cloud Zone / us-west-2",
+                        	"tags": [
+                                        {
+                                            "key": "hol.cloud.zone.env",
+                                            "value": "prod"
+                                        },
+                                        {
+                                            "key": "hol.cloud.zone.platform",
+                                            "value": "aws"
+                                        }
+                                    ]
+                        }
+                response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+                if response.status_code == 200:
+                    json_data = json.loads(response.content.decode('utf-8'))
+                    print('- Successfully tagged AWS cloud zone - us-west-2')
+                    return cloudzone_id
+                else:
+                    print('- Failed to tag AWS cloud zone - us-west-2')
+                    return None
 
 def tag_azure_cz(cz_Ids):
     if cz_Ids is not None:
@@ -513,8 +553,12 @@ def tag_azure_cz(cz_Ids):
                             "name": "Azure Cloud Zone / West US",
                         	"tags": [
                                         {
-                                            "key": "cloud",
+                                            "key": "hol.cloud.zone.platform",
                                             "value": "azure"
+                                        },
+                                        {
+                                            "key": "hol.cloud.zone.env",
+                                            "value": "dev"
                                         }
                                     ]
                         }
@@ -571,7 +615,7 @@ def create_azure_flavor():
         print('- Failed to create Azure flavor mapping')
         return None
 
-def get_aws_regionid():
+def get_aws1_regionid():
     api_url = '{0}iaas/api/regions'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
@@ -588,11 +632,11 @@ def get_aws_regionid():
                     aws_region_id = extract_values(json_data2,'id')
                     return aws_region_id
     else:
-        print('- Failed to get AWS region')
+        print('- Failed to get AWS west 1 region')
         return None
 
-def create_aws_flavor():
-        aws_id = get_aws_regionid()
+def create_aws1_flavor():
+        aws_id = get_aws1_regionid()
         aws_id = aws_id[0]
         api_url = '{0}iaas/api/flavor-profiles'.format(api_url_base)
         data =  {
@@ -610,19 +654,62 @@ def create_aws_flavor():
         response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 201:
             json_data = json.loads(response.content.decode('utf-8'))
-            print('- Successfully created AWS flavors')
+            print('- Successfully created AWS west 1 flavors')
+        else:
+            print('- Failed to created AWS west 1 flavors')
+            return None
+
+def get_aws2_regionid():
+    api_url = '{0}iaas/api/regions'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        region_id = extract_values(json_data,'id')
+        for x in region_id:
+            api_url2 = '{0}iaas/api/regions/{1}'.format(api_url_base,x)
+            response2 = requests.get(api_url2, headers=headers1, verify=False)
+            if response2.status_code == 200:
+                json_data2 = json.loads(response2.content.decode('utf-8'))
+                region_name = extract_values(json_data2,'externalRegionId')
+                compare = region_name[0]
+                if compare == 'us-west-2':
+                    aws_region_id = extract_values(json_data2,'id')
+                    return aws_region_id
+    else:
+        print('- Failed to get AWS west 2 region ID')
+        return None
+
+def create_aws2_flavor():
+        aws_id = get_aws2_regionid()
+        aws_id = aws_id[0]
+        api_url = '{0}iaas/api/flavor-profiles'.format(api_url_base)
+        data =  {
+                    "name": "aws-west-2",
+                    "flavorMapping": {
+                        "micro": {
+                            "name": "t2.nano"
+                        },
+                        "small": {
+                            "name": "t2.micro"
+                        }
+                    },
+                    "regionId": aws_id
+                }
+        response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+        if response.status_code == 201:
+            json_data = json.loads(response.content.decode('utf-8'))
+            print('- Successfully created AWS west 2 flavors')
         else:
             print('- Failed to created AWS flavors')
             return None
 
-
-def create_aws_image():
-        aws_id = get_aws_regionid()
+def create_aws1_image():
+        aws_id = get_aws1_regionid()
         aws_id = aws_id[0]
         api_url = '{0}iaas/api/image-profiles'.format(api_url_base)
         data =  {
-                  "name" : "aws-image-profile",
-                  "description": "Image Profile for AWS Images",
+                  "name" : "aws1-image-profile",
+                  "description": "Image Profile for AWS1 Images",
                   "imageMapping" : {
                     "CentOS7": {
                         "name": "ami-a83d0cc8"
@@ -636,11 +723,35 @@ def create_aws_image():
         response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 201:
             json_data = json.loads(response.content.decode('utf-8'))
-            print('- Successfully created AWS images')
+            print('- Successfully created AWS west 1 images')
         else:
-            print('- Failed to created AWS images')
+            print('- Failed to created AWS west 1 images')
             return None
 
+def create_aws2_image():
+        aws_id = get_aws2_regionid()
+        aws_id = aws_id[0]
+        api_url = '{0}iaas/api/image-profiles'.format(api_url_base)
+        data =  {
+                  "name" : "aws2-image-profile",
+                  "description": "Image Profile for AWS2 Images",
+                  "imageMapping" : {
+                    "CentOS7": {
+                        "name": "ami-a6629ede"
+                    },
+                    "Ubuntu": {
+                        "name": "ami-0a00ce72"
+                    }
+                  },
+                  "regionId": aws_id
+                }
+        response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+        if response.status_code == 201:
+            json_data = json.loads(response.content.decode('utf-8'))
+            print('- Successfully created AWS west 2 images')
+        else:
+            print('- Failed to created AWS west 2 images')
+            return None
 
 def create_azure_image():
         azure_id = get_azure_regionid()
@@ -788,26 +899,28 @@ if hol:
 print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
 print('Creating cloud accounts')
-create_vsphere_ca()
 create_aws_ca()
 create_azure_ca()
 
 
 print('Tagging cloud zones')
 c_zones_ids = get_czids()
-aws_cz = tag_aws_cz(c_zones_ids)
+aws_cz1 = tag_aws_cz_west_1(c_zones_ids)
+aws_cz2 = tag_aws_cz_west_2(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
 vsphere_cz = tag_vsphere_cz(c_zones_ids)  # really this is to rename the cloud zone but it also resets the tags
 
 print('Udating projects')
 project_ids = get_projids()
-update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
-update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
+update_project(project_ids,vsphere_cz,aws_cz1,aws_cz2,azure_cz)
+update_project_rp(project_ids,vsphere_cz,aws_cz1,aws_cz2,azure_cz)
 
 print('Creating flavor profiles')
 create_azure_flavor()
-create_aws_flavor()
+create_aws1_flavor()
+create_aws2_flavor()
 
 print('Creating image profiles')
 create_azure_image()
-create_aws_image()
+create_aws1_image()
+create_aws2_image()
