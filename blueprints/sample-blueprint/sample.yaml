@@ -1,2 +1,3 @@
-name:blueprint-name
-version:1
+formatVersion: 1
+name: Sample Blueprint Name
+version: 1
