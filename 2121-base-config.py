@@ -198,7 +198,27 @@ def vra_ready():  # this is a proxy to test whether vRA is ready or not since th
         ready = False
     return(ready)
 
-def create_vsphere_ca():
+def get_vsphere_regions():
+    api_url = '{0}iaas/api/cloud-accounts-vsphere/region-enumeration'.format(api_url_base)
+    data =  {
+                "hostName": "vcsa-01a.corp.local",
+                "password": "VMware1!",
+                "name": "vSphere Cloud Account",
+                "description": "vSphere Cloud Account",
+                "username": "administrator@corp.local"
+            }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        regions = json_data["externalRegionIds"]
+        print('- Successfully got vSphere Datacenters')
+        return(regions)
+    else:
+        print('- Failed to get vSphere Datacenters')
+        return None
+
+
+def create_vsphere_ca(region_ids):
     api_url = '{0}iaas/api/cloud-accounts-vsphere'.format(api_url_base)
     data =  {
                 "hostName": "vcsa-01a.corp.local",
@@ -207,7 +227,7 @@ def create_vsphere_ca():
                 "createDefaultZones" : "false",
                 "name": "vSphere Cloud Account",
                 "description": "vSphere Cloud Account",
-#                "regionIds": ["Datacenter:datacenter-21"],
+                "regionIds": region_ids,
                 "username": "administrator@corp.local",
                 "tags": [
                         ]              
@@ -496,10 +516,10 @@ def tag_aws_cz(cz_Ids):
                 response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
                     json_data = json.loads(response.content.decode('utf-8'))
-                    print('- Successfully Tagged AWS Cloud Zone - us-west-1')
+                    print('- Successfully Tagged AWS cloud zone')
                     return cloudzone_id
                 else:
-                    print('- Failed to tag AWS Cloud Zone - us-west-1')
+                    print('- Failed to tag AWS cloud zone')
                     return None
 
 
@@ -788,7 +808,8 @@ if hol:
 print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
 print('Creating cloud accounts')
-create_vsphere_ca()
+vsphere_region_ids = get_vsphere_regions()
+create_vsphere_ca(vsphere_region_ids)
 create_aws_ca()
 create_azure_ca()
 
@@ -797,7 +818,7 @@ print('Tagging cloud zones')
 c_zones_ids = get_czids()
 aws_cz = tag_aws_cz(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
-vsphere_cz = tag_vsphere_cz(c_zones_ids)  # really this is to rename the cloud zone but it also resets the tags
+vsphere_cz = tag_vsphere_cz(c_zones_ids)  
 
 print('Udating projects')
 project_ids = get_projids()
@@ -811,5 +832,3 @@ create_aws_flavor()
 print('Creating image profiles')
 create_azure_image()
 create_aws_image()
-
-#end
