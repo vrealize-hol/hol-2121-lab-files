@@ -204,10 +204,10 @@ def create_vsphere_ca():
                 "hostName": "vcsa-01a.corp.local",
                 "acceptSelfSignedCertificate": "true",
                 "password": "VMware1!",
-                "createDefaultZones" : "true",
+                "createDefaultZones" : "false",
                 "name": "vSphere Cloud Account",
                 "description": "vSphere Cloud Account",
-                "regionIds": ["Datacenter:datacenter-21"],
+#                "regionIds": ["Datacenter:datacenter-21"],
                 "username": "administrator@corp.local",
                 "tags": [
                         ]              
