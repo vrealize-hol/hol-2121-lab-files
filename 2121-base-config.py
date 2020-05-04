@@ -202,6 +202,7 @@ def get_vsphere_regions():
     api_url = '{0}iaas/api/cloud-accounts-vsphere/region-enumeration'.format(api_url_base)
     data =  {
                 "hostName": "vcsa-01a.corp.local",
+                "acceptSelfSignedCertificate": "true",
                 "password": "VMware1!",
                 "name": "vSphere Cloud Account",
                 "description": "vSphere Cloud Account",
