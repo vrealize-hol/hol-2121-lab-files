@@ -6,7 +6,7 @@ resources:
   Cloud_vSphere_Machine_1:
     type: Cloud.vSphere.Machine
     properties:
-      image: CentOS7
+      image: Ubuntu
       flavor: micro
       constraints: 
         - tag: cloud:vsphere
