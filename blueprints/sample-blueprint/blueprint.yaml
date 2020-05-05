@@ -1,5 +1,5 @@
 formatVersion: 1
-name: Sample vSphere Machine
+name: Simple vSphere Machine
 version: 1
 inputs: {}
 resources:
