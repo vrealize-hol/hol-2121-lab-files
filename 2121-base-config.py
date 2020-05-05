@@ -226,7 +226,7 @@ def create_vsphere_ca(region_ids):
                 "acceptSelfSignedCertificate": "true",
                 "password": "VMware1!",
                 "createDefaultZones" : "false",
-                "name": "vSphere Cloud Account",
+                "name": "Private Cloud",
                 "description": "vSphere Cloud Account",
                 "regionIds": region_ids,
                 "username": "administrator@corp.local",
@@ -328,19 +328,6 @@ def get_right_czid_aws(czid):
         print('- Failed to get the right AWS cloud zone ID')
         return None
 
-def get_right_czid_aws_west2(czid):
-    api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,czid)
-    response = requests.get(api_url, headers=headers1, verify=False)
-    if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
-        cz_name = extract_values(json_data,'name')
-        for x in cz_name:
-            if x == 'AWS Cloud Account / us-west-2':
-                return czid
-    else:
-        print('- Failed to get the right AWS west 2 cloud zone ID')
-        return None
-
 def get_right_czid_azure(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,czid)
     response = requests.get(api_url, headers=headers1, verify=False)
@@ -365,7 +352,7 @@ def get_czid_aws(czid):
             if cz_name == 'AWS-West-1 / us-west-1':
                 return x
         else:
-            print('- Failed to get the AWS 1 cloud zone ID')
+            print('- Failed to get the AWS cloud zone ID')
             return None
 
 def get_projids():
@@ -476,7 +463,7 @@ def tag_vsphere_cz(cz_Ids):
             if cloudzone_id is not None:
                 api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
                 data =  {
-                            "name": "vRA-Managed vSphere Compute",
+                            "name": "Private Cloud / RegionA01",
                         	"tags": [
                                         {
                                             "key": "cloud",
@@ -506,7 +493,7 @@ def tag_aws_cz(cz_Ids):
             if cloudzone_id is not None:
                 api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
                 data =  {
-                            "name": "AWS Cloud Zone / us-west-1",
+                            "name": "AWS / us-west-1",
                         	"tags": [
                                         {
                                             "key": "cloud",
@@ -531,7 +518,7 @@ def tag_azure_cz(cz_Ids):
             if cloudzone_id is not None:
                 api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
                 data =  {
-                            "name": "Azure Cloud Zone / West US",
+                            "name": "Azure / West US",
                         	"tags": [
                                         {
                                             "key": "cloud",

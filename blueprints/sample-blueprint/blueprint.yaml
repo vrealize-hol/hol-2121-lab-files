@@ -6,7 +6,7 @@ resources:
   Cloud_vSphere_Machine_1:
     type: Cloud.vSphere.Machine
     properties:
-      image: Ubuntu
+      image: Ubuntu16
       flavor: micro
       constraints: 
         - tag: cloud:vsphere
