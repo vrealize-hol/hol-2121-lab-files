@@ -1,4 +1,21 @@
-  
 formatVersion: 1
-name: Sample Blueprint Name
+name: Sample vSphere Machine
 version: 1
+inputs: {}
+resources:
+  Cloud_vSphere_Machine_1:
+    type: Cloud.vSphere.Machine
+    properties:
+      image: CentOS7
+      flavor: micro
+      constraints: 
+        - tag: cloud:vsphere
+      networks:
+        - network: '${resource.Cloud_vSphere_Network_1.id}'
+          assignment: static
+  Cloud_vSphere_Network_1:
+    type: Cloud.vSphere.Network
+    properties:
+      networkType: existing
+      constraints: 
+        - tag: net:vsphere
