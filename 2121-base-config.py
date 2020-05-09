@@ -225,7 +225,7 @@ def create_vsphere_ca(region_ids):
                 "hostName": "vcsa-01a.corp.local",
                 "acceptSelfSignedCertificate": "true",
                 "password": "VMware1!",
-                "createDefaultZones" : "false",
+                "createDefaultZones" : "true",
                 "name": "Private Cloud",
                 "description": "vSphere Cloud Account",
                 "regionIds": region_ids,
@@ -304,12 +304,13 @@ def get_czids():
 
 def get_right_czid_vsphere(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,czid)
+    zone_name = 'Private Cloud / ' + 'Datacenter:datacenter-21'
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
         json_data = json.loads(response.content.decode('utf-8'))
         cz_name = extract_values(json_data,'name')
         for x in cz_name:
-            if x == 'vRA-Managed vSphere Compute':
+            if x == zone_name:
                 return czid
     else:
         print('- Failed to get the right vSphere cloud zone ID')
@@ -485,6 +486,9 @@ def tag_vsphere_cz(cz_Ids):
                 else:
                     print('- Failed to tag vSphere cloud zone')
                     return None
+    else:
+        print('- Failed to tag vSphere cloud zone')
+        return None
 
 def tag_aws_cz(cz_Ids):
     if cz_Ids is not None:
@@ -509,6 +513,10 @@ def tag_aws_cz(cz_Ids):
                 else:
                     print('- Failed to tag AWS cloud zone')
                     return None
+    else:
+        print('- Failed to tag AWS cloud zone')
+        return None
+
 
 
 def tag_azure_cz(cz_Ids):
@@ -534,6 +542,10 @@ def tag_azure_cz(cz_Ids):
                 else:
                     print('- Failed to tag Azure cloud zone')
                     return None
+    else:
+        print('- Failed to tag Azure cloud zone')
+        return None
+
 
 def get_azure_regionid():
     api_url = '{0}iaas/api/regions'.format(api_url_base)
@@ -549,8 +561,8 @@ def get_azure_regionid():
                 region_name = extract_values(json_data2,'externalRegionId')
                 compare = region_name[0]
                 if compare == 'westus':
-                    aws_region_id = extract_values(json_data2,'id')
-                    return aws_region_id
+                    region_id = extract_values(json_data2,'id')
+                    return region_id
     else:
         print('- Failed to get Azure region ID')
         return None
@@ -795,28 +807,28 @@ if hol:
 
 print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
-print('Creating cloud accounts')
+#print('Creating cloud accounts')
 vsphere_region_ids = get_vsphere_regions()
 create_vsphere_ca(vsphere_region_ids)
 create_aws_ca()
 create_azure_ca()
 
 
-print('Tagging cloud zones')
+#print('Tagging cloud zones')
 c_zones_ids = get_czids()
 aws_cz = tag_aws_cz(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
 vsphere_cz = tag_vsphere_cz(c_zones_ids)  
 
-print('Udating projects')
-project_ids = get_projids()
-update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
-update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
+#print('Udating projects')
+#project_ids = get_projids()
+#update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
+#update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
 
-print('Creating flavor profiles')
-create_azure_flavor()
-create_aws_flavor()
+#print('Creating flavor profiles')
+#create_azure_flavor()
+#create_aws_flavor()
 
-print('Creating image profiles')
-create_azure_image()
-create_aws_image()
+#print('Creating image profiles')
+#create_azure_image()
+#create_aws_image()
