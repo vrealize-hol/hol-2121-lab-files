@@ -7,7 +7,7 @@ resources:
     type: Cloud.vSphere.Machine
     properties:
       image: Ubuntu16
-      flavor: micro
+      flavor: tiny
       constraints: 
         - tag: cloud:vsphere
       networks:
