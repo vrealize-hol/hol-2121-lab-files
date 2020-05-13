@@ -45,6 +45,7 @@ if local_creds != True:
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
+apiVersion = "2020-"
 
 # set internet proxy for for communication out of the vPod
 proxies = {
@@ -393,6 +394,58 @@ def get_right_projid_rp(projid):
         print('- Failed to get the right project ID')
         return None
 
+def create_project(vsphere,aws,azure):
+    api_url = '{0}iaas/api/projects'.format(api_url_base)
+    data =  {
+                "name": "HOL Project",
+                "zoneAssignmentConfigurations": [
+                        {
+                            "zoneId": vsphere,
+                            "maxNumberInstances": 20,
+                            "priority": 1,
+                            "cpuLimit": 40,
+                            "memoryLimitMB": 33554
+                        },
+                        {
+                            "zoneId": aws,
+                            "maxNumberInstances": 10,
+                            "priority": 1,
+                            "cpuLimit": 20,
+                            "memoryLimitMB": 41943
+
+                        },
+                        {
+                            "zoneId": azure,
+                            "maxNumberInstances": 10,
+                            "priority": 1,
+                            "cpuLimit": 20,
+                            "memoryLimitMB": 41943
+                        }
+                    ],
+                "administrators": [
+                        {
+                            "email": "holadmin@corp.local"
+                        }
+                ],
+                "members": [
+                    {
+                        "email": "holuser@corp.local"
+                    },
+                    {
+                        "email": "holdev@corp.local"
+                    }
+                ],
+                "machineNamingTemplate": "${project.name}-${resource.image}-${###}",
+                "sharedResources": "true"
+            }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print('- Successfully created HOL Project')
+    else:
+        print('- Failed to create HOL Project')
+    return None
+
 def update_project(proj_Ids,vsphere,aws,azure):
     if proj_Ids is not None:
         for x in proj_Ids:
@@ -465,6 +518,7 @@ def tag_vsphere_cz(cz_Ids):
                 api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
                 data =  {
                             "name": "Private Cloud / RegionA01",
+                            "placementPloicy": "SPREAD",
                         	"tags": [
                                         {
                                             "key": "cloud",
@@ -511,7 +565,7 @@ def tag_aws_cz(cz_Ids):
                     print('- Successfully Tagged AWS cloud zone')
                     return cloudzone_id
                 else:
-                    print('- Failed to tag AWS cloud zone')
+                    print('- Failed to tag AWS cloud zone - bad response code')
                     return None
     else:
         print('- Failed to tag AWS cloud zone')
@@ -687,6 +741,43 @@ def create_azure_image():
             print('- Failed to created Azure images')
             return None
 
+def get_computeids():
+    api_url = '{0}iaas/api/fabric-computes'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        comp_id = extract_values(json_data,'id')
+    return(comp_id)
+
+
+def tag_vsphere_clusters(computes):
+    for x in computes:
+        api_url = '{0}iaas/api/fabric-computes/{1}'.format(api_url_base,x)
+        response = requests.get(api_url, headers=headers1, verify=False)
+        if response.status_code == 200:
+            json_data = json.loads(response.content.decode('utf-8'))
+            cluster = extract_values(json_data,'name')
+            if "Workload" in cluster[0]:
+                ## This is a vSphere workload cluster - tag it ##
+                api_url1 = '{0}iaas/api/fabric-computes/{1}'.format(api_url_base,x)
+                data = {
+                            "tags": [
+                                        {
+                                            "key": "compute",
+                                            "value": "vsphere"
+                                        }
+                                    ]
+                        }
+                response1 = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+                if response1.status_code == 200:
+                    print("- Tagged", cluster[0], "cluster")
+                else:
+                    print("- Failed to tag", cluster[0], "cluster")
+
+        else:
+            print('Failed to tag vSphere workload clusters')
+    return None
+
 
 def check_for_assigned(vlpurn):
     # this function checks the dynamoDB to see if this pod urn already has a credential set assigned
@@ -807,23 +898,30 @@ if hol:
 
 print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
-#print('Creating cloud accounts')
+print('Creating cloud accounts')
 vsphere_region_ids = get_vsphere_regions()
 create_vsphere_ca(vsphere_region_ids)
 create_aws_ca()
 create_azure_ca()
 
-
-#print('Tagging cloud zones')
+print('Tagging cloud zones')
 c_zones_ids = get_czids()
 aws_cz = tag_aws_cz(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
 vsphere_cz = tag_vsphere_cz(c_zones_ids)  
 
+print('Tagging vSphere workload clusters')
+compute = get_computeids()
+tag_vsphere_clusters(compute)
+
+print('Creating projects')
+create_project(vsphere_cz,aws_cz,azure_cz)
+
 #print('Udating projects')
 #project_ids = get_projids()
 #update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
 #update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
+
 
 #print('Creating flavor profiles')
 #create_azure_flavor()
