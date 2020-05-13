@@ -779,6 +779,71 @@ def tag_vsphere_clusters(computes):
     return None
 
 
+def get_fabric_network_ids():
+    api_url = '{0}iaas/api/fabric-networks-vsphere'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        net_ids = extract_values(json_data,'id')
+    return(net_ids)
+
+
+def update_networks(net_ids):
+    for x in net_ids:
+        api_url = '{0}iaas/api/fabric-networks-vsphere/{1}'.format(api_url_base,x)
+        response = requests.get(api_url, headers=headers1, verify=False)
+        if response.status_code == 200:
+            json_data = json.loads(response.content.decode('utf-8'))
+            network = extract_values(json_data,'name')
+            if "VM-Region" in network[0]:
+                ## This is the vSphere VM network - update it ##
+                api_url1 = '{0}iaas/api/fabric-networks-vsphere/{1}'.format(api_url_base,x)
+                data = {
+                            "isDefault": "true",
+                            "domain": "corp.local",
+                            "defaultGateway": "192.168.120.1",
+                            "dnsServerAddresses": ["192.168.110.10"],
+                            "cidr": "192.168.120.0/24",
+                            "dnsSearchDomains": ["corp.local"],
+                            "tags": [
+                                        {
+                                            "key": "net",
+                                            "value": "vsphere"
+                                        }
+                                    ]
+                        }
+                response1 = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+                if response1.status_code == 200:
+                    print("- Updated the", network[0], "network")
+                    return(x)
+                else:
+                    print("- Failed to update", network[0], "network")
+                    return None
+
+        else:
+            print('Failed to get vSphere networks')
+    return None
+
+
+def create_ip_pool():
+    api_url = '{0}iaas/api/network-ip-ranges'.format(api_url_base)
+    data =  {
+                "ipVersion": "IPv4",
+                "fabricNetworkId": vm_net_id,
+                "name": "vSphere Static Pool",
+                "description": "For static IP assignment to deployed VMs",
+                "startIPAddress" : "192.168.120.2",
+                "endIPAddress": "192.168.120.30"           
+            }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print('- Successfully created the IP pool')
+    else:
+        print('- Failed to create the IP pool')
+    return None
+
+
 def check_for_assigned(vlpurn):
     # this function checks the dynamoDB to see if this pod urn already has a credential set assigned
 
@@ -916,6 +981,11 @@ tag_vsphere_clusters(compute)
 
 print('Creating projects')
 create_project(vsphere_cz,aws_cz,azure_cz)
+
+print('Update the vSphere VM network and create an IP pool')
+networks = get_fabric_network_ids()
+vm_net_id = update_networks(networks)
+create_ip_pool()
 
 #print('Udating projects')
 #project_ids = get_projids()
