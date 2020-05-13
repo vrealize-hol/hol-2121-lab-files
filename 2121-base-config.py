@@ -311,6 +311,10 @@ def get_right_czid_vsphere(czid):
         json_data = json.loads(response.content.decode('utf-8'))
         cz_name = extract_values(json_data,'name')
         for x in cz_name:
+            ########################
+            print(x,cz_name)
+            #######################
+
             if x == zone_name:
                 return czid
     else:
@@ -759,7 +763,6 @@ def tag_vsphere_clusters(computes):
             cluster = extract_values(json_data,'name')
             if "Workload" in cluster[0]:
                 ## This is a vSphere workload cluster - tag it ##
-                api_url1 = '{0}iaas/api/fabric-computes/{1}'.format(api_url_base,x)
                 data = {
                             "tags": [
                                         {
@@ -797,7 +800,6 @@ def update_networks(net_ids):
             network = extract_values(json_data,'name')
             if "VM-Region" in network[0]:
                 ## This is the vSphere VM network - update it ##
-                api_url1 = '{0}iaas/api/fabric-networks-vsphere/{1}'.format(api_url_base,x)
                 data = {
                             "isDefault": "true",
                             "domain": "corp.local",
@@ -844,6 +846,44 @@ def create_ip_pool():
     return None
 
 
+def get_vsphere_region_id():
+    api_url = '{0}iaas/api/regions'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'Datacenter' in content[x]["name"]:              ## Looking to match the vSphere datacenter name
+                vsphere_id = (content[x]["id"])
+                return vsphere_id
+    else:
+        print('- Failed to get the vSphere region (datacenter) ID')
+        return None
+
+
+def create_net_profile():
+    api_url = '{0}iaas/api/network-profiles'.format(api_url_base)
+    data =  {
+                "regionId": vsphere_region_id,
+                "fabricNetworkIds": [vm_net_id],
+                "name": "vSphere Networks",
+                "description": "vSphere networks where VMs will be deployed",     
+                "tags": [
+                            {
+                                "key": "net",
+                                "value": "vsphere"
+                            }
+                        ]
+            }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        print('- Successfully created the network profile')
+    else:
+        print('- Failed to create the network profile')
+        return None
+
+        
 def check_for_assigned(vlpurn):
     # this function checks the dynamoDB to see if this pod urn already has a credential set assigned
 
@@ -965,15 +1005,21 @@ print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
 print('Creating cloud accounts')
 vsphere_region_ids = get_vsphere_regions()
+
 create_vsphere_ca(vsphere_region_ids)
 create_aws_ca()
 create_azure_ca()
 
 print('Tagging cloud zones')
 c_zones_ids = get_czids()
+
+print(c_zones_ids)
+
 aws_cz = tag_aws_cz(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
 vsphere_cz = tag_vsphere_cz(c_zones_ids)  
+
+print(vsphere_cz)
 
 print('Tagging vSphere workload clusters')
 compute = get_computeids()
@@ -982,10 +1028,13 @@ tag_vsphere_clusters(compute)
 print('Creating projects')
 create_project(vsphere_cz,aws_cz,azure_cz)
 
-print('Update the vSphere VM network and create an IP pool')
+print('Update the vSphere networking')
 networks = get_fabric_network_ids()
 vm_net_id = update_networks(networks)
 create_ip_pool()
+vsphere_region_id = get_vsphere_region_id()
+create_net_profile()
+
 
 #print('Udating projects')
 #project_ids = get_projids()
