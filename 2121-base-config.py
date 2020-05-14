@@ -457,32 +457,54 @@ def update_project(proj_Ids,vsphere,aws,azure):
             if project_id is not None:
                 api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,project_id)
                 data =  {
-                            "name": "HOL Project",
-                        	"zoneAssignmentConfigurations": [
-                                        {
-                                            "zoneId": vsphere,
-                                            "maxNumberInstances": 20,
-                                            "priority": 1
-                                        },
-                                        {
-                                            "zoneId": aws,
-                                            "maxNumberInstances": 10,
-                                            "priority": 1
-                                        },
-                                        {
-                                            "zoneId": azure,
-                                            "maxNumberInstances": 10,
-                                            "priority": 1
-                                        }
-                                    ]
+                    "name": "HOL Project",
+                    "zoneAssignmentConfigurations": [
+                            {
+                                "zoneId": vsphere,
+                                "maxNumberInstances": 20,
+                                "priority": 1,
+                                "cpuLimit": 40,
+                                "memoryLimitMB": 33554
+                            },
+                            {
+                                "zoneId": aws,
+                                "maxNumberInstances": 10,
+                                "priority": 1,
+                                "cpuLimit": 20,
+                                "memoryLimitMB": 41943
+
+                            },
+                            {
+                                "zoneId": azure,
+                                "maxNumberInstances": 10,
+                                "priority": 1,
+                                "cpuLimit": 20,
+                                "memoryLimitMB": 41943
+                            }
+                        ],
+                    "administrators": [
+                            {
+                                "email": "holadmin@corp.local"
+                            }
+                    ],
+                    "members": [
+                        {
+                            "email": "holuser@corp.local"
+                        },
+                        {
+                            "email": "holdev@corp.local"
                         }
+                    ],
+                    "machineNamingTemplate": "${project.name}-${resource.image}-${###}",
+                    "sharedResources": "true"
+                }
                 response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
                     json_data = json.loads(response.content.decode('utf-8'))
                     print('- Successfully added cloud zones to HOL Project')
                 else:
                     print('- Failed to add cloud zones to HOL Project')
-                    return None
+    return None
 
 def update_project_rp(proj_Ids,vsphere,aws,azure):
     if proj_Ids is not None:
@@ -632,11 +654,17 @@ def create_azure_flavor():
     data =  {
                 "name": "azure",
                 "flavorMapping": {
-                    "micro": {
+                    "Tiny": {
                         "name": "Standard_B1ls"
                     },
-                    "small": {
+                    "Small": {
                         "name": "Standard_B1s"
+                    },
+                    "Medium": {
+                        "name": "Standard_B1ms"
+                    },
+                    "Large": {
+                        "name": "Standard_B2s"
                     }
                 },
                 "regionId": azure_id
@@ -676,11 +704,17 @@ def create_aws_flavor():
         data =  {
                     "name": "aws-west-1",
                     "flavorMapping": {
-                        "micro": {
+                        "Tiny": {
                             "name": "t2.nano"
                         },
-                        "small": {
+                        "Small": {
                             "name": "t2.micro"
+                        },
+                        "Medium": {
+                            "name": "t2.small"
+                        },
+                        "Large": {
+                            "name": "t2.medium"
                         }
                     },
                     "regionId": aws_id
@@ -705,8 +739,8 @@ def create_aws_image():
                     "CentOS7": {
                         "name": "ami-a83d0cc8"
                     },
-                    "Ubuntu": {
-                        "name": "ami-1c1d217c"
+                    "Ubuntu16": {
+                        "name": "hol-ubuntu16-apache"
                     }
                   },
                   "regionId": aws_id
@@ -728,7 +762,7 @@ def create_azure_image():
                   "name" : "azure-image-profile",
                   "description": "Image Profile for Azure Images",
                   "imageMapping" : {
-                    "Ubuntu": {
+                    "Ubuntu16": {
                         "name": "Canonical:UbuntuServer:16.04-LTS:latest"
                     },
                     "CentOS7": {
@@ -883,7 +917,49 @@ def create_net_profile():
         print('- Failed to create the network profile')
         return None
 
-        
+
+def get_vsphere_datastore_id():
+    api_url = '{0}iaas/api/fabric-vsphere-datastores'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'ISCSI01' in content[x]["name"]:         ## Looking to match the right datastore name
+                vsphere_ds = (content[x]["id"])
+                return vsphere_ds
+    else:
+        print('- Failed to get the vSphere datastore ID')
+        return None
+
+
+def create_storage_profile():
+    api_url = '{0}iaas/api/storage-profiles-vsphere'.format(api_url_base)
+    data =  {
+                "regionId": vsphere_region_id,
+                "datastoreId": datastore,
+                "name": "vSphere Storage",
+                "description": "vSphere shared datastore where VMs will be deployed",
+                "sharesLevel": "normal",
+                "diskMode": "dependent",
+                "provisioningType": "thin",
+                "defaultItem": "true",
+                "tags": [
+                            {
+                                "key": "storage",
+                                "value": "vsphere"
+                            }
+                        ]
+            }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        print('- Successfully created the storage profile')
+    else:
+        print('- Failed to create the storage profile')
+        return None
+
+
 def check_for_assigned(vlpurn):
     # this function checks the dynamoDB to see if this pod urn already has a credential set assigned
 
@@ -1004,29 +1080,27 @@ if hol:
 print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
 print('Creating cloud accounts')
-vsphere_region_ids = get_vsphere_regions()
+#vsphere_region_ids = get_vsphere_regions()
 
-create_vsphere_ca(vsphere_region_ids)
-create_aws_ca()
-create_azure_ca()
+#create_vsphere_ca(vsphere_region_ids)
+#create_aws_ca()
+#create_azure_ca()
 
 print('Tagging cloud zones')
 c_zones_ids = get_czids()
-
-print(c_zones_ids)
-
 aws_cz = tag_aws_cz(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
 vsphere_cz = tag_vsphere_cz(c_zones_ids)  
-
-print(vsphere_cz)
 
 print('Tagging vSphere workload clusters')
 compute = get_computeids()
 tag_vsphere_clusters(compute)
 
-print('Creating projects')
-create_project(vsphere_cz,aws_cz,azure_cz)
+##create_project(vsphere_cz,aws_cz,azure_cz)
+print('Udating projects')
+project_ids = get_projids()
+update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
+#update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
 
 print('Update the vSphere networking')
 networks = get_fabric_network_ids()
@@ -1035,17 +1109,14 @@ create_ip_pool()
 vsphere_region_id = get_vsphere_region_id()
 create_net_profile()
 
+print('Create storage profiles')
+datastore = get_vsphere_datastore_id()
+create_storage_profile()
 
-#print('Udating projects')
-#project_ids = get_projids()
-#update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
-#update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
+print('Updating flavor profiles')
+create_azure_flavor()
+create_aws_flavor()
 
-
-#print('Creating flavor profiles')
-#create_azure_flavor()
-#create_aws_flavor()
-
-#print('Creating image profiles')
-#create_azure_image()
-#create_aws_image()
+print('Updating image profiles')
+create_azure_image()
+create_aws_image()
