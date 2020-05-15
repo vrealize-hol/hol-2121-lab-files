@@ -1018,9 +1018,44 @@ def share_bps(source, project):
     }
     response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully added blueprint catalog items')
+        print('- Successfully added blueprint catalog entitlement')
     else:
-        print('- Failed to add blueprint catalog items')
+        print('- Failed to add blueprint catalog entitlement')
+        return None
+
+def get_cat_id():
+    api_url = '{0}catalog/api/items'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'Simple vSphere Machine' in content[x]["name"]:       ## Looking to match the simple blueprint catalog item
+                cat_id = (content[x]["id"])
+                return cat_id
+    else:
+        print('- Failed to get the blueprint ID')
+        return None
+
+
+def deploy_cat_item(catId, project):
+    # shares blueprint content (source) from 'projid' project to the catalog
+    api_url = '{0}catalog/api/items/{1}/request'.format(api_url_base, catId)
+    data = {
+            "deploymentName": "My vSphere VM",
+            "projectId": project,
+            "version": "1",
+            "reason": "Deployment of vSphere vm from blueprint",
+            "inputs": {}
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print('- Successfully de[;pued the catalog item')
+    else:
+        print('- Failed to deploy the catalog item')
+
 
 
 def check_for_assigned(vlpurn):
@@ -1189,3 +1224,12 @@ blueprint_id = get_blueprint_id()
 release_blueprint(blueprint_id)
 bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source,hol_project)
+
+
+###################  
+## New bearer token here as holuser
+####################
+
+print('Deploying vSphere VM')
+catalog_item = get_cat_id()
+deploy_cat_item(catalog_item, hol_project)
