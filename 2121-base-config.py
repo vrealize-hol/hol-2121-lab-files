@@ -448,7 +448,7 @@ def create_project(vsphere,aws,azure):
         print('- Successfully created HOL Project')
     else:
         print('- Failed to create HOL Project')
-    return None
+
 
 def update_project(proj_Ids,vsphere,aws,azure):
     if proj_Ids is not None:
@@ -502,9 +502,10 @@ def update_project(proj_Ids,vsphere,aws,azure):
                 if response.status_code == 200:
                     json_data = json.loads(response.content.decode('utf-8'))
                     print('- Successfully added cloud zones to HOL Project')
+                    return project_id
                 else:
                     print('- Failed to add cloud zones to HOL Project')
-    return None
+    
 
 def update_project_rp(proj_Ids,vsphere,aws,azure):
     if proj_Ids is not None:
@@ -960,6 +961,68 @@ def create_storage_profile():
         return None
 
 
+def get_blueprint_id():
+    api_url = '{0}blueprint/api/blueprints'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'Simple vSphere Machine' in content[x]["name"]:       ## Looking to match the simple blueprint
+                bp_id = (content[x]["id"])
+                return bp_id
+    else:
+        print('- Failed to get the blueprint ID')
+        return None
+
+
+def release_blueprint(bpid):
+    api_url = '{0}blueprint/api/blueprints/{1}/versions/{2}/actions/release'.format(api_url_base, bpid, 1)
+    data = {}
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        print('- Successfully released the blueprint')
+    else:
+        print('- Failed to releasea the blueprint')
+
+
+def add_bp_cat_source(projid):
+    # adds blueprints from 'projid' project as a content source
+    api_url = '{0}catalog/api/admin/sources'.format(api_url_base)
+    data = {
+        "name": "HOL Project Blueprints",
+        "typeId": "com.vmw.blueprint",
+        "description": "Released blueprints in the HOL Project",
+        "config": {"sourceProjectId": projid},
+        "projectId": projid
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        json_data = json.loads(response.content.decode('utf-8'))
+        itemsFound = json_data["itemsFound"]
+        itemsImported = json_data["itemsImported"]
+        sourceId = json_data["id"]
+        print('- Successfully added blueprints as a catalog source')
+        return sourceId
+    else:
+        print('- Failed to add blueprints as a catalog source')
+        return None
+
+def share_bps(source, project):
+    # shares blueprint content (source) from 'projid' project to the catalog
+    api_url = '{0}catalog/api/admin/entitlements'.format(api_url_base)
+    data = {
+        "definition": {"type": "CatalogSourceIdentifier", "id": source},
+        "projectId": project
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        print('- Successfully added blueprint catalog items')
+    else:
+        print('- Failed to add blueprint catalog items')
+
+
 def check_for_assigned(vlpurn):
     # this function checks the dynamoDB to see if this pod urn already has a credential set assigned
 
@@ -1096,10 +1159,10 @@ print('Tagging vSphere workload clusters')
 compute = get_computeids()
 tag_vsphere_clusters(compute)
 
-##create_project(vsphere_cz,aws_cz,azure_cz)
+#create_project(vsphere_cz,aws_cz,azure_cz)
 print('Udating projects')
 project_ids = get_projids()
-update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
+hol_project = update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
 #update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
 
 print('Update the vSphere networking')
@@ -1120,3 +1183,9 @@ create_aws_flavor()
 print('Updating image profiles')
 create_azure_image()
 create_aws_image()
+
+print('Adding blueprint to the catalog')
+blueprint_id = get_blueprint_id()
+release_blueprint(blueprint_id)
+bp_source = add_bp_cat_source(hol_project)
+share_bps(bp_source,hol_project)
