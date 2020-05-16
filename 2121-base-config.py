@@ -960,6 +960,66 @@ def create_storage_profile():
         print('- Failed to create the storage profile')
         return None
 
+def get_pricing_card():
+    api_url = '{0}price/api/private/pricing-cards'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'Default Pricing' in content[x]["name"]:       ## Looking to match the Default pricing card
+                id = (content[x]["id"])
+                return id
+    else:
+        print('- Failed to get default pricing card')
+        return None
+
+
+def modify_pricing_card(cardid):
+    # modifies the Default Pricing card
+    api_url = '{0}price/api/private/pricing-cards/{1}'.format(api_url_base, cardid)
+    data = {
+        "name": "HOL Pricing Card",
+        "description": "Sets pricing rates for vSphere VMs",
+        "meteringItems": [
+            {
+                "itemName": "vcpu",
+                "metering": {
+                    "baseRate": 29,
+                    "chargePeriod": "MONTHLY",
+                    "chargeOnPowerState": "ALWAYS",
+                    "chargeBasedOn": "USAGE"
+                }
+            },
+            {
+                "itemName": "memory",
+                "metering": {
+                    "baseRate": 18,
+                    "chargePeriod": "MONTHLY",
+                    "chargeOnPowerState": "ALWAYS",
+                    "chargeBasedOn": "USAGE",
+                    "unit": "gb"
+                },
+            },
+            {
+                "itemName": "storage",
+                "metering": {
+                    "baseRate": 0.13,
+                    "chargePeriod": "MONTHLY",
+                    "chargeOnPowerState": "ALWAYS",
+                    "chargeBasedOn": "USAGE",
+                    "unit": "gb"
+                }
+            }
+        ],
+        "chargeModel": "PAY_AS_YOU_GO"
+    }
+    response = requests.put(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        print('- Successfully modified the pricing card')
+    else:
+        print('- Failed to modify the pricing card')
 
 def get_blueprint_id():
     api_url = '{0}blueprint/api/blueprints'.format(api_url_base)
@@ -1218,6 +1278,10 @@ create_aws_flavor()
 print('Updating image profiles')
 create_azure_image()
 create_aws_image()
+
+print('Configuring pricing')
+pricing_card_id = get_pricing_card()
+modify_pricing_card(pricing_card_id)
 
 print('Adding blueprint to the catalog')
 blueprint_id = get_blueprint_id()
