@@ -174,11 +174,11 @@ def extract_values(obj, key):
     results = extract(obj, arr, key)
     return results
 
-def get_token():
+def get_token(user_name,pass_word):
     api_url = '{0}csp/gateway/am/api/login?access_token'.format(api_url_base)
     data =  {
-              "username":"admin",
-              "password": "VMware1!"
+              "username": user_name,
+              "password": pass_word
             }
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 200:
@@ -1157,7 +1157,11 @@ def get_lab_user():
 ##### MAIN #####
 # find out if vRA is ready. if not ready we need to exit or the configuration will fail
 headers = {'Content-Type': 'application/json'}
-access_key = get_token()
+
+###########################################  
+## API calls below as holadmin@corp.local
+###########################################  
+access_key = get_token("admin","VMware1!")
 
 if access_key == 'not ready':  # we are not even getting an auth token from vRA yet
     print('\n\n\nvRA is not yet ready in this Hands On Lab pod - no access token yet')
@@ -1241,8 +1245,8 @@ print('Creating cloud accounts')
 #vsphere_region_ids = get_vsphere_regions()
 
 #create_vsphere_ca(vsphere_region_ids)
-#create_aws_ca()
-#create_azure_ca()
+create_aws_ca()
+create_azure_ca()
 
 print('Tagging cloud zones')
 c_zones_ids = get_czids()
@@ -1290,9 +1294,14 @@ bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source,hol_project)
 
 
-###################  
-## New bearer token here as holuser
-####################
+###########################################  
+## API calls below as holuser@corp.local
+###########################################  
+
+access_key = get_token("admin","VMware1!")
+headers1 = {'Content-Type': 'application/json',
+           'Authorization': 'Bearer {0}'.format(access_key)}
+
 
 print('Deploying vSphere VM')
 catalog_item = get_cat_id()
