@@ -1161,7 +1161,7 @@ headers = {'Content-Type': 'application/json'}
 ###########################################  
 ## API calls below as holadmin@corp.local
 ###########################################  
-access_key = get_token("admin","VMware1!")
+access_key = get_token("holadmin","VMware1!")
 
 if access_key == 'not ready':  # we are not even getting an auth token from vRA yet
     print('\n\n\nvRA is not yet ready in this Hands On Lab pod - no access token yet')
@@ -1298,7 +1298,7 @@ share_bps(bp_source,hol_project)
 ## API calls below as holuser@corp.local
 ###########################################  
 
-access_key = get_token("admin","VMware1!")
+access_key = get_token("holuser","VMware1!")
 headers1 = {'Content-Type': 'application/json',
            'Authorization': 'Bearer {0}'.format(access_key)}
 
