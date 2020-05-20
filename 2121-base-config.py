@@ -1015,7 +1015,7 @@ def modify_pricing_card(cardid):
     else:
         print('- Failed to modify the pricing card')
 
-def get_blueprint_id():
+def get_blueprint_id(bpName):
     api_url = '{0}blueprint/api/blueprints'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
@@ -1023,16 +1023,16 @@ def get_blueprint_id():
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
-            if 'Ubuntu 18' in content[x]["name"]:       ## Looking to match the Ubuntu 18 blueprint
+            if bpName in content[x]["name"]:       ## Looking to match the blueprint name
                 bp_id = (content[x]["id"])
                 return bp_id
     else:
-        print('- Failed to get the blueprint ID')
+        print('- Failed to get the blueprint ID for', bpName)
         return None
 
 
-def release_blueprint(bpid):
-    api_url = '{0}blueprint/api/blueprints/{1}/versions/{2}/actions/release'.format(api_url_base, bpid, 1)
+def release_blueprint(bpid,ver):
+    api_url = '{0}blueprint/api/blueprints/{1}/versions/{2}/actions/release'.format(api_url_base, bpid, ver)
     data = {}
     response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 200:
@@ -1105,7 +1105,6 @@ def deploy_cat_item(catId, project):
     }
     response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully deployed the catalog item')
     else:
         print('- Failed to deploy the catalog item')
@@ -1136,7 +1135,6 @@ def get_lab_user():
     assigned_account = 'URN not found in the current labs database'
     dynamodb = boto3.resource('dynamodb', aws_access_key_id=d_id, aws_secret_access_key=d_sec, region_name=d_reg)
     table = dynamodb.Table('HOL-2073-current-labs')
-
     response = table.scan(
         FilterExpression=Attr('vapp_urn').eq(vlp),
         ProjectionExpression="account"
@@ -1282,8 +1280,10 @@ pricing_card_id = get_pricing_card()
 modify_pricing_card(pricing_card_id)
 
 print('Adding blueprint to the catalog')
-blueprint_id = get_blueprint_id()
-release_blueprint(blueprint_id)
+blueprint_id = get_blueprint_id('Ubuntu 18')
+release_blueprint(blueprint_id, 1)
+blueprint_id = get_blueprint_id('MOAD-Retail-LB')
+release_blueprint(blueprint_id, 1)
 bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source,hol_project)
 
