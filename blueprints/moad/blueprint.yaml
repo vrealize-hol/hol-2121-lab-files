@@ -1,0 +1,346 @@
+formatVersion: 1
+name: MOAD-Retail-LB
+version: 1
+inputs:
+  environment:
+    type: string
+    enum:
+      - AWS
+      - Azure
+      - vSphere
+    description: Target Environment
+    default: vSphere
+    title: Select Environment for Deployment
+  image:
+    type: string
+    enum:
+      - Ubuntu-18
+    default: Ubuntu-18
+    title: Select Image/OS
+  size:
+    type: string
+    enum:
+      - small
+      - medium
+      - large
+    description: Size of Nodes
+    default: medium
+    title: Node Size
+  clusterSize:
+    type: string
+    enum:
+      - small
+      - medium
+      - large
+    description: Front End Cluster Size
+    default: small
+    title: Front End Cluster Size
+  username:
+    type: string
+    description: The username you would like to have for the installation.
+    default: demouser
+    title: System Admin Account Username
+  password:
+    type: string
+    description: The password you would like to use for the ocuser account.
+    default: vRealiz3!
+    title: OpenCart Admin Account Password
+    pattern: '[a-z0-9A-Z@#$]+'
+    encrypted: true
+  stressThreads:
+    type: string
+    description: Number of user threads generated to simulate traffic load on the shopping cart website.
+    default: '25'
+    title: Workload Threads
+    minLength: 1
+    maxLength: 3
+    format: ''
+    pattern: '[0-9]{1,3}'
+resources:
+  Cloud_LoadBalancer_1:
+    type: Cloud.LoadBalancer
+    metadata:
+      layoutPosition:
+        - 0
+        - 1
+    properties:
+      routes:
+        - protocol: HTTP
+          port: '80'
+          instanceProtocol: HTTP
+          instancePort: '80'
+      network: '${resource.Cloud_Network_1.name}'
+      instances: '${resource.frontend.id}'
+      internetFacing: true
+  frontend:
+    type: Cloud.Machine
+    dependsOn:
+      - mysql
+    metadata:
+      layoutPosition:
+        - 0
+        - 2
+    properties:
+      flavor: '${input.size}'
+      image: '${input.image}'
+      name: '${self.resourceName}'
+      tags:
+        - key: OC Deployment
+          value: '${env.deploymentId}'
+      count: '${input.clusterSize== "small" ? 1 : (input.clusterSize == "medium" ? 2 : 4)}'
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignPublicIpAddress: 1
+      cloudConfig: |
+        repo_update: true
+        repo_upgrade: all
+        apt_source:
+          - source: deb http://archive.ubuntu.com/ubuntu main universe multiverse restricted
+
+        packages:
+          - apache2
+          - php
+          - php-mysql
+          - libapache2-mod-php
+          - php-cli
+          - php-common
+          - php-intl
+          - php-gd
+          - php-mbstring
+          - php-xml
+          - php-zip
+          - php-curl
+          - php-xmlrpc
+          - mysql-server-5.7
+          - unzip
+          - open-vm-tools
+
+        users:
+          - name: ${input.username}
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+          - name: ocuser
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+
+        write_files:
+          - path: /etc/hosts
+            content: 127.0.0.1 ${self.resourceName}
+            append: true
+
+        runcmd:
+          - systemctl restart apache2
+          - USER=ocuser
+          - PASS=${input.password}
+          - echo $USER:$PASS | /usr/sbin/chpasswd
+          - echo ${input.username}:$PASS | /usr/sbin/chpasswd
+          - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+          - service ssh reload
+          - hostnamectl set-hostname ${self.resourceName}
+          - git clone https://github.com/mcclanc/opencart-demo.git /tmp/opencart
+          - mv /tmp/opencart /var/www/
+          - chown -R www-data.www-data /var/www/opencart
+          - chmod -R 775 /var/www/opencart
+          - tee /etc/apache2/sites-available/opencart.conf > /dev/null << EOF
+          - <VirtualHost *:80>
+          -   ServerName www.opencart.cmbu.local
+          -   DocumentRoot /var/www/opencart
+          -   <Directory /var/www/opencart/>
+          -     AllowOverride All
+          -     allow from all
+          -   </Directory>
+          - </VirtualHost>
+          - EOF
+          - cd /etc/apache2/sites-available/
+          - a2ensite opencart.conf
+          - a2dissite 000-default.conf
+          - systemctl reload apache2
+          - systemctl restart apache2
+          - echo "[client]" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - echo "user=ocuser" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - echo "password=$PASS" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - export cloudip=$(curl http://checkip.amazonaws.com/)
+          - export onpremip=$(ip route get 8.8.8.8 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')
+          - mysqlip=${resource.mysql.networks[0].address}
+          - export ip4=${input.environment == "vSphere" ? "$onpremip" : "$cloudip"}
+          - mysql -u $USER -h $mysqlip -e 'source /var/www/opencart/install/opencart.sql'
+          - mysql -u $USER -h $mysqlip -e "INSERT INTO oc_user (user_id,user_group_id,username,password,salt,firstname,lastname,email,image,code,ip,status,date_added) VALUES (1,1,'admin','5feaa046f6927df3d744007ec1491dba838f672e','c4wnfrq9J','demo','user','admin@admin.com','none','none','none',1,'2019-01-31 06:29:09')" opencart
+          - sed -i "s/frontendiphere/$ip4/g" /var/www/opencart/config.php
+          - sed -i "s/dbiphere/$mysqlip/g" /var/www/opencart/config.php
+          - sed -i "s/usernamehere/$USER/g" /var/www/opencart/config.php
+          - sed -i "s/passwordhere/$PASS/g" /var/www/opencart/config.php
+          - sed -i "s/frontendiphere/$ip4/g" /var/www/opencart/admin/config.php
+          - sed -i "s/dbiphere/$mysqlip/g" /var/www/opencart/admin/config.php
+          - sed -i "s/usernamehere/$USER/g" /var/www/opencart/admin/config.php
+          - sed -i "s/passwordhere/$PASS/g" /var/www/opencart/admin/config.php
+          - systemctl reload apache2
+          - systemctl restart apache2
+          - cd /tmp
+          - wget http://fielddemo-content.cmbu.local/files/VMware-Log-Insight-Agent-8.0.0-14743436_10.196.206.21.bin
+          - chmod +x VMware-Log-Insight-Agent-8.0.0-14743436_10.196.206.21.bin
+          - LIAGENT_SSL=no /tmp/VMware-Log-Insight-Agent-8.0.0-14743436_10.196.206.21.bin
+          - echo "ocuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+          - echo 'Cloud-init is done!' >> /tmp/finished.txt
+      constraints:
+        - tag: '${input.environment == "AWS" ? "env:aws":(input.environment == "Azure" ? "env:azure" : "env:vsphere")}'
+  mysql:
+    type: Cloud.Machine
+    metadata:
+      layoutPosition:
+        - 0
+        - 3
+    properties:
+      flavor: '${input.size}'
+      image: '${input.image}'
+      tags:
+        - key: OC Deployment
+          value: '${env.deploymentId}'
+      name: '${self.resourceName}'
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignPublicIpAddress: 1
+      cloudConfig: |
+        repo_update: true
+        repo_upgrade: all
+        apt_source:
+          - source: deb http://archive.ubuntu.com/ubuntu main universe multiverse restricted
+
+        packages:
+          - mysql-server-5.7
+          - mysql-client
+          - unzip
+          - open-vm-tools
+
+        users:
+          - name: ${input.username}
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+          - name: ocuser
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+
+        write_files:
+          - path: /etc/cron.hourly/oc_cleanup
+            owner: root
+            permissions: '0777'
+            content: "mysql -u ocuser -D opencart -e 'delete from oc_session where oc_session.expire < DATE_SUB(NOW(), INTERVAL 360 DAY);'"
+          - path: /etc/cron.daily/mysqlslowlogs
+            owner: root
+            permissions: '0666'
+            content: |
+              /var/lib/mysql/mysql-slow.log {
+                 size 1G
+                 dateext
+                 compress
+                 missingok
+                 rotate 2
+                 notifempty
+                 delaycompress
+                 sharedscripts
+                 nocopytruncate
+                 create 660 mysql mysql
+                 postrotate
+                 /usr/bin/mysql -e 'select @@global.slow_query_log into @sq_log_save; set global slow_query_log=off; select sleep(5); FLUSH SLOW LOGS; select sleep(10); set global slow_query_log=@sq_log_save;'
+                 endscript
+                 rotate 150
+              }
+          - path: /etc/hosts
+            content: 127.0.0.1 ${self.name}
+            append: true
+
+        runcmd:
+          - export DEBIAN_FRONTEND=noninteractive
+          - USER=ocuser
+          - PASS=${input.password}
+          - echo $USER:$PASS | /usr/sbin/chpasswd
+          - echo ${input.username}:$PASS | /usr/sbin/chpasswd
+          - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+          - service ssh reload
+          - hostnamectl set-hostname ${self.resourceName}
+          - echo "mysql-server-5.7 mysql-server/root_password password root" | sudo debconf-set-selections
+          - echo "mysql-server-5.7 mysql-server/root_password_again password root" | sudo debconf-set-selections
+          - echo "[client]" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - echo "user=root" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - echo "password=root" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - echo "user=ocuser" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - echo "password=$PASS" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+          - sed -i 's/#slow/slow/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+          - sed -i 's/#long_query_time/long_query_time/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+          - sed -i 's/bind-address/#bind-address/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+          - systemctl restart mysql
+          - mysql -u root -e "GRANT ALL ON *.* TO '$USER'@'%' IDENTIFIED BY '$PASS'"
+          - mysql -u root -e 'CREATE DATABASE opencart'
+          - mysql -u root -e 'USE opencart'
+          - mysql -u root -e 'flush privileges'
+          - cd /tmp
+          - wget http://fielddemo-content.cmbu.local/files/VMware-Log-Insight-Agent-8.0.0-14743436_10.196.206.21.bin
+          - chmod +x VMware-Log-Insight-Agent-8.0.0-14743436_10.196.206.21.bin
+          - LIAGENT_SSL=no /tmp/VMware-Log-Insight-Agent-8.0.0-14743436_10.196.206.21.bin
+          - echo 'Cloud-init is done!' >> /tmp/finished.txt
+      constraints:
+        - tag: '${input.environment == "AWS" ? "env:aws":(input.environment == "Azure" ? "env:azure" : "env:vsphere")}'
+  loadGen:
+    type: Cloud.Machine
+    metadata:
+      layoutPosition:
+        - 0
+        - 4
+    properties:
+      image: '${input.image}'
+      flavor: small
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+          assignPublicIpAddress: 1
+      cloudConfig: |
+        users:
+          - name: ${input.username}
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+          - name: ocuser
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+        write_files:
+          - path: /etc/hosts
+            content: 127.0.0.1 ${self.resourceName}
+            append: true
+        packages:
+            default-jre
+        runcmd:
+          - USER=ocuser
+          - PASS=${input.password}
+          - echo $USER:$PASS | /usr/sbin/chpasswd
+          - export LBIP=${resource.Cloud_LoadBalancer_1.address}
+          - export LOAD=${input.stressThreads}
+          - export JAVA_HOME=
+          - echo ${input.username}:$PASS | /usr/sbin/chpasswd
+          - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+          - service ssh reload
+          - hostnamectl set-hostname ${self.resourceName}
+          - export lbIP=${resource.Cloud_LoadBalancer_1.address}
+          - sudo mkdir /usr/jmeter
+          - cd /usr/jmeter
+          - 'sudo wget http://fielddemo-content/loadgen/apache-jmeter-5.2.1.tgz'
+          - sudo tar -xvzf apache-jmeter-5.2.1.tgz
+          - cd apache-jmeter-5.2.1/bin/templates
+          - 'sudo wget http://fielddemo-content/loadgen/ImprovedShoppingCart.jmx'
+          - sudo sed -i "s/10.176.150.78/$LBIP/g" /usr/jmeter/apache-jmeter-5.2.1/bin/templates/ImprovedShoppingCart.jmx
+          - sudo sed -i "s/num_threads\">150/num_threads\">$LOAD/g" /usr/jmeter/apache-jmeter-5.2.1/bin/templates/ImprovedShoppingCart.jmx
+          - sudo nohup /usr/jmeter/apache-jmeter-5.2.1/bin/jmeter -j /var/log/jmeter.log -n -t /usr/jmeter/apache-jmeter-5.2.1/bin/templates/ImprovedShoppingCart.jmx &
+      constraints:
+        - tag: '${input.environment == "AWS" ? "env:aws":(input.environment == "Azure" ? "env:azure" : "env:vsphere")}'
+  Cloud_Network_1:
+    type: Cloud.Network
+    metadata:
+      layoutPosition:
+        - 1
+        - 0
+    properties:
+      networkType: existing
+      constraints:
+        - tag: '${input.environment == "AWS" ? "env:aws":(input.environment == "Azure" ? "env:azure" : "env:vsphere")}'
