@@ -305,17 +305,12 @@ def get_czids():
 
 def get_right_czid_vsphere(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,czid)
-    zone_name = 'Private Cloud / ' + 'Datacenter:datacenter-21'
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
         json_data = json.loads(response.content.decode('utf-8'))
         cz_name = extract_values(json_data,'name')
         for x in cz_name:
-            ########################
-            print(x,cz_name)
-            #######################
-
-            if x == zone_name:
+            if 'RegionA01' in x:        # Looking for the CZ for vSphere
                 return czid
     else:
         print('- Failed to get the right vSphere cloud zone ID')
@@ -428,15 +423,15 @@ def create_project(vsphere,aws,azure):
                     ],
                 "administrators": [
                         {
-                            "email": "holadmin@corp.local"
+                            "email": "holadmin"
                         }
                 ],
                 "members": [
                     {
-                        "email": "holuser@corp.local"
+                        "email": "holuser"
                     },
                     {
-                        "email": "holdev@corp.local"
+                        "email": "holdev"
                     }
                 ],
                 "machineNamingTemplate": "${project.name}-${resource.image}-${###}",
@@ -458,6 +453,7 @@ def update_project(proj_Ids,vsphere,aws,azure):
                 api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,project_id)
                 data =  {
                     "name": "HOL Project",
+                    "machineNamingTemplate": "${resource.name}-${###}",
                     "zoneAssignmentConfigurations": [
                             {
                                 "zoneId": vsphere,
@@ -484,18 +480,17 @@ def update_project(proj_Ids,vsphere,aws,azure):
                         ],
                     "administrators": [
                             {
-                                "email": "holadmin@corp.local"
+                                "email": "holadmin"
                             }
                     ],
                     "members": [
                         {
-                            "email": "holuser@corp.local"
+                            "email": "holuser"
                         },
                         {
-                            "email": "holdev@corp.local"
+                            "email": "holdev"
                         }
                     ],
-                    "machineNamingTemplate": "${project.name}-${resource.image}-${###}",
                     "sharedResources": "true"
                 }
                 response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
@@ -545,7 +540,7 @@ def tag_vsphere_cz(cz_Ids):
                 api_url = '{0}iaas/api/zones/{1}'.format(api_url_base,cloudzone_id)
                 data =  {
                             "name": "Private Cloud / RegionA01",
-                            "placementPloicy": "SPREAD",
+                            "placementPolicy": "SPREAD",
                         	"tags": [
                                         {
                                             "key": "cloud",
@@ -561,7 +556,6 @@ def tag_vsphere_cz(cz_Ids):
                         }
                 response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    json_data = json.loads(response.content.decode('utf-8'))
                     print('- Successfully Tagged vSphere Cloud Zone')
                     return(cloudzone_id)
                 else:
@@ -655,16 +649,16 @@ def create_azure_flavor():
     data =  {
                 "name": "azure",
                 "flavorMapping": {
-                    "Tiny": {
+                    "tiny": {
                         "name": "Standard_B1ls"
                     },
-                    "Small": {
+                    "small": {
                         "name": "Standard_B1s"
                     },
-                    "Medium": {
+                    "medium": {
                         "name": "Standard_B1ms"
                     },
-                    "Large": {
+                    "large": {
                         "name": "Standard_B2s"
                     }
                 },
@@ -705,16 +699,16 @@ def create_aws_flavor():
         data =  {
                     "name": "aws-west-1",
                     "flavorMapping": {
-                        "Tiny": {
+                        "tiny": {
                             "name": "t2.nano"
                         },
-                        "Small": {
+                        "small": {
                             "name": "t2.micro"
                         },
-                        "Medium": {
+                        "medium": {
                             "name": "t2.small"
                         },
-                        "Large": {
+                        "large": {
                             "name": "t2.medium"
                         }
                     },
@@ -740,7 +734,7 @@ def create_aws_image():
                     "CentOS7": {
                         "name": "ami-a83d0cc8"
                     },
-                    "Ubuntu16": {
+                    "Ubuntu18": {
                         "name": "hol-ubuntu16-apache"
                     }
                   },
@@ -763,8 +757,8 @@ def create_azure_image():
                   "name" : "azure-image-profile",
                   "description": "Image Profile for Azure Images",
                   "imageMapping" : {
-                    "Ubuntu16": {
-                        "name": "Canonical:UbuntuServer:16.04-LTS:latest"
+                    "Ubuntu18": {
+                        "name": "Canonical:UbuntuServer:18.04-LTS:latest"
                     },
                     "CentOS7": {
                         "name": "OpenLogic:CentOS:7.4:7.4.20180704"
@@ -889,7 +883,7 @@ def get_vsphere_region_id():
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
-            if 'Datacenter' in content[x]["name"]:              ## Looking to match the vSphere datacenter name
+            if 'RegionA01' in content[x]["name"]:              ## Looking to match the vSphere datacenter name
                 vsphere_id = (content[x]["id"])
                 return vsphere_id
     else:
@@ -1029,7 +1023,7 @@ def get_blueprint_id():
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
-            if 'Ubuntu 16' in content[x]["name"]:       ## Looking to match the simple blueprint
+            if 'Ubuntu 18' in content[x]["name"]:       ## Looking to match the Ubuntu 18 blueprint
                 bp_id = (content[x]["id"])
                 return bp_id
     else:
@@ -1091,7 +1085,7 @@ def get_cat_id():
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
-            if 'Simple vSphere Machine' in content[x]["name"]:       ## Looking to match the simple blueprint catalog item
+            if 'Ubuntu 18' in content[x]["name"]:       ## Looking to match the Ubuntu 18 blueprint catalog item
                 cat_id = (content[x]["id"])
                 return cat_id
     else:
@@ -1103,7 +1097,7 @@ def deploy_cat_item(catId, project):
     # shares blueprint content (source) from 'projid' project to the catalog
     api_url = '{0}catalog/api/items/{1}/request'.format(api_url_base, catId)
     data = {
-            "deploymentName": "My vSphere VM",
+            "deploymentName": "vSphere Ubuntu",
             "projectId": project,
             "version": "1",
             "reason": "Deployment of vSphere vm from blueprint",
@@ -1112,7 +1106,7 @@ def deploy_cat_item(catId, project):
     response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 200:
         json_data = json.loads(response.content.decode('utf-8'))
-        print('- Successfully de[;pued the catalog item')
+        print('- Successfully deployed the catalog item')
     else:
         print('- Failed to deploy the catalog item')
 
@@ -1159,7 +1153,7 @@ def get_lab_user():
 headers = {'Content-Type': 'application/json'}
 
 ###########################################  
-## API calls below as holadmin@corp.local
+## API calls below as holadmin
 ###########################################  
 access_key = get_token("holadmin","VMware1!")
 
@@ -1295,7 +1289,7 @@ share_bps(bp_source,hol_project)
 
 
 ###########################################  
-## API calls below as holuser@corp.local
+## API calls below as holuser
 ###########################################  
 
 access_key = get_token("holuser","VMware1!")
