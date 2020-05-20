@@ -1029,7 +1029,7 @@ def get_blueprint_id():
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
-            if 'Simple vSphere Machine' in content[x]["name"]:       ## Looking to match the simple blueprint
+            if 'Ubuntu 16' in content[x]["name"]:       ## Looking to match the simple blueprint
                 bp_id = (content[x]["id"])
                 return bp_id
     else:
