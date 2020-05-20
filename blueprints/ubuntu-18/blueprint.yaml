@@ -1,12 +1,12 @@
 formatVersion: 1
-name: Ubuntu 16
+name: Ubuntu 18
 version: 1
 inputs: {}
 resources:
   ubuntu:
     type: Cloud.vSphere.Machine
     properties:
-      image: Ubuntu16
+      image: Ubuntu18
       flavor: tiny
       constraints:
         - tag: 'cloud:vsphere'
