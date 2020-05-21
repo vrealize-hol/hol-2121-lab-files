@@ -18,7 +18,7 @@ def get_token(user_name,pass_word):
             }
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         key = json_data['access_token']
         return key
     else:
@@ -214,10 +214,6 @@ def delete_zones(zones):
 ##### MAIN #####
 
 headers = {'Content-Type': 'application/json'}
-
-###########################################  
-## API calls below as admin
-###########################################  
 access_key = get_token("admin","VMware1!")
 headers1 = {'Content-Type': 'application/json',
            'Authorization': 'Bearer {0}'.format(access_key)}
