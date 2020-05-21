@@ -452,8 +452,6 @@ def update_project(proj_Ids,vsphere,aws,azure):
             if project_id is not None:
                 api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,project_id)
                 data =  {
-                    "name": "HOL Project",
-                    "machineNamingTemplate": "${resource.name}-${###}",
                     "zoneAssignmentConfigurations": [
                             {
                                 "zoneId": vsphere,
@@ -495,11 +493,15 @@ def update_project(proj_Ids,vsphere,aws,azure):
                 }
                 response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    json_data = json.loads(response.content.decode('utf-8'))
-                    print('- Successfully added cloud zones to HOL Project')
-                    return project_id
-                else:
-                    print('- Failed to add cloud zones to HOL Project')
+                    json_data = response.json()
+                    json_data["machineNamingTemplate"] = "${resource.name}-${###}" #workaround as the first call fails with this property
+
+                    response = requests.patch(api_url, headers=headers1, data=json.dumps(json_data), verify=False)
+                    if response.status_code == 200:
+                        print('- Successfully added cloud zones to HOL Project')
+                        return project_id
+                
+                print('- Failed to add cloud zones to HOL Project')
     
 
 def update_project_rp(proj_Ids,vsphere,aws,azure):
@@ -1300,3 +1302,39 @@ headers1 = {'Content-Type': 'application/json',
 print('Deploying vSphere VM')
 catalog_item = get_cat_id()
 deploy_cat_item(catalog_item, hol_project)
+
+
+
+# Creating cloud accounts
+# - Successfully Created AWS Cloud Account
+# - Successfully Created Azure Cloud Account
+# Tagging cloud zones
+# - Successfully Tagged AWS cloud zone
+# - Successfully tagged Azure cloud zone
+# - Successfully Tagged vSphere Cloud Zone
+# Tagging vSphere workload clusters
+# - Tagged Workload 1 cluster
+# - Tagged Workload 2 cluster
+# Udating projects
+# - Failed to add cloud zones to HOL Project
+# Update the vSphere networking
+# - Updated the VM-RegionA01-vDS-COMP network
+# - Successfully created the IP pool
+# - Successfully created the network profile
+# Create storage profiles
+# - Successfully created the storage profile
+# Updating flavor profiles
+# - Successfully created Azure flavor mapping
+# - Successfully created AWS flavors
+# Updating image profiles
+# - Successfully created Azure images
+# - Successfully created AWS images
+# Configuring pricing
+# - Successfully modified the pricing card
+# Adding blueprint to the catalog
+# - Successfully released the blueprint
+# - Successfully released the blueprint
+# - Failed to add blueprints as a catalog source
+# - Failed to add blueprint catalog entitlement
+# Deploying vSphere VM
+# - Failed to deploy the catalog item
