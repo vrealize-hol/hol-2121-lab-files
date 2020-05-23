@@ -519,6 +519,7 @@ def update_project(proj_Ids, vsphere, aws, azure):
                     ],
                     "sharedResources": "true",
                     "constraints": {},
+                    "operationTimeout": 0,
                     "machineNamingTemplate" : "${resource.name}-${###}"
                 }
                 response = requests.patch(
@@ -532,38 +533,6 @@ def update_project(proj_Ids, vsphere, aws, azure):
                 print('- Failed to add cloud zones to HOL Project')
         print('- Failed to add cloud zones to HOL Project - Project not found')
     print('- Failed to add cloud zones to HOL Project - Project list empty')
-
-
-def update_project_rp(proj_Ids, vsphere, aws, azure):
-    if proj_Ids is not None:
-        for x in proj_Ids:
-            project_id = get_right_projid_rp(x)
-            if project_id is not None:
-                api_url = '{0}iaas/api/projects/{1}'.format(
-                    api_url_base, project_id)
-                data = {
-                    "name": "Rainpole Project",
-                    "zoneAssignmentConfigurations": [
-                        {
-                            "zoneId": vsphere,
-                            "maxNumberInstances": 20,
-                            "priority": 1
-                        },
-                        {
-                            "zoneId": aws,
-                            "maxNumberInstances": 10,
-                            "priority": 1
-                        }
-                    ]
-                }
-                response = requests.patch(
-                    api_url, headers=headers1, data=json.dumps(data), verify=False)
-                if response.status_code == 200:
-                    json_data = json.loads(response.content.decode('utf-8'))
-                    print('- Successfully added cloud zones to Rainpole project')
-                else:
-                    print('- Failed to add cloud zones to Rainpole project')
-                    return None
 
 
 def tag_vsphere_cz(cz_Ids):
@@ -1327,7 +1296,6 @@ tag_vsphere_clusters(compute)
 print('Udating projects')
 project_ids = get_projids()
 hol_project = update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
-#update_project_rp(project_ids,vsphere_cz,aws_cz,azure_cz)
 
 print('Update the vSphere networking')
 networks = get_fabric_network_ids()
