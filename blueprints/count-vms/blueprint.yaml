@@ -1,0 +1,29 @@
+formatVersion: 1
+name: Count-vms
+version: 1
+inputs:
+	countvm:
+		type: integer
+		description: How many VMs do you want to deploy?
+		default: 1
+		minimum: 1
+		maximum: 3
+		title: Number of VMs
+resources:
+  ubuntu:
+    type: Cloud.vSphere.Machine
+    properties:
+      image: Ubuntu18
+      flavor: tiny
+      constraints:
+        - tag: 'cloud:vsphere'
+      networks:
+        - network: '${resource.vsphere_network.id}'
+          assignment: static
+      count: '${input.countvm}'
+  vsphere_network:
+    type: Cloud.vSphere.Network
+    properties:
+      networkType: existing
+      constraints:
+        - tag: 'net:vsphere'
