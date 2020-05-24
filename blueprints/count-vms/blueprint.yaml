@@ -2,13 +2,13 @@ formatVersion: 1
 name: Count-vms
 version: 1
 inputs:
-	countvm:
-		type: integer
-		description: How many VMs do you want to deploy?
-		default: 1
-		minimum: 1
-		maximum: 3
-		title: Number of VMs
+  countvm:
+    type: integer
+    description: How many VMs do you want to deploy?
+    default: 1
+    minimum: 1
+    maximum: 3
+    title: Number of VMs
 resources:
   ubuntu:
     type: Cloud.vSphere.Machine
