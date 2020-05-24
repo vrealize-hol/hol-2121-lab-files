@@ -2,6 +2,7 @@
 
 import json
 import requests
+import time
 import urllib3
 urllib3.disable_warnings()
     
@@ -221,7 +222,12 @@ headers1 = {'Content-Type': 'application/json',
 
 print('Deleting deployments')
 deploymentIds = get_deployments()
+deployment_count = len(deploymentIds)
 delete_deployments(deploymentIds)
+while deployment_count > 0:
+    time.sleep(5)
+    deploymentIds = get_deployments()
+    deployment_count = len(deploymentIds)
 
 print('Deleting the HOL Project')
 hol_project = get_holproj()
