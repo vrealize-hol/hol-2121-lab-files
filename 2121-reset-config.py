@@ -2,6 +2,7 @@
 
 import json
 import requests
+import time
 import urllib3
 urllib3.disable_warnings()
     
@@ -97,9 +98,9 @@ def unconfigure_project(proj_Id):
     }
     response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        print('- Successfully removed configuration from HOL Project')
+        print('- Successfully removed cloud zones from HOL Project')
     else:
-        print('- Failed to remove configuration from HOL Project')
+        print('- Failed to remove cloud zones from HOL Project')
 
 def unconfigure_github():
     # removes GitHub
@@ -219,9 +220,14 @@ headers1 = {'Content-Type': 'application/json',
            'Authorization': 'Bearer {0}'.format(access_key)}
 
 
-print('Deleting deployments')
+print('Deleting deployments - this might take a minute')
 deploymentIds = get_deployments()
+deployment_count = len(deploymentIds)
 delete_deployments(deploymentIds)
+while deployment_count > 0:
+    time.sleep(5)
+    deploymentIds = get_deployments()
+    deployment_count = len(deploymentIds)
 
 print('Deleting the HOL Project')
 hol_project = get_holproj()
