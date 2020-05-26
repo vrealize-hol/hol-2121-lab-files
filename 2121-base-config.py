@@ -815,7 +815,7 @@ def add_github_integration():
     data = {
         "endpointProperties": {
             "url": "https://api.github.com",
-            "privateKey": "7707ae2f643604708ffad4b5420cbd5a03797223",
+            "privateKey": github_key,
             "dcId": "onprem"
         },
         "customProperties": {
