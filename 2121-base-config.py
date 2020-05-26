@@ -8,7 +8,7 @@
 # azten = "put your azure tenant id here"
 # azappkey = "put your azure application key here"
 # azappid = "put your azure application id here"
-# also change the value below to True
+# also change the "local_creds" value below to True
 import urllib3
 import sys
 import re
@@ -28,6 +28,8 @@ local_creds = True
 
 urllib3.disable_warnings()
 
+github_key = os.getenv('github_key')
+
 # Remove from final pod
 awsid = os.getenv('temp_awsid')
 awssec = os.getenv('temp_awssec')
@@ -45,7 +47,7 @@ if local_creds != True:
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
-apiVersion = "2020-"
+apiVersion = "2019-01-15"
 
 # set internet proxy for for communication out of the vPod
 proxies = {
@@ -190,23 +192,11 @@ def get_token(user_name, pass_word):
     response = requests.post(api_url, headers=headers,
                              data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         key = json_data['access_token']
         return key
     else:
         return('not ready')
-
-
-def vra_ready():  # this is a proxy to test whether vRA is ready or not since the deployments service is one of the last to come up
-    api_url = '{0}deployment/api/deployments'.format(api_url_base)
-    response = requests.get(api_url, headers=headers1, verify=False)
-    if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
-        deployments = extract_values(json_data, 'id')
-        ready = True
-    else:
-        ready = False
-    return(ready)
 
 
 def get_vsphere_regions():
@@ -223,7 +213,7 @@ def get_vsphere_regions():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         regions = json_data["externalRegionIds"]
         print('- Successfully got vSphere Datacenters')
         return(regions)
@@ -249,7 +239,6 @@ def create_vsphere_ca(region_ids):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully Created vSphere Cloud Account')
     else:
         print('- Failed to Create the vSphere Cloud Account')
@@ -276,7 +265,6 @@ def create_aws_ca():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully Created AWS Cloud Account')
     else:
         print('- Failed to Create the AWS Cloud Account')
@@ -302,7 +290,6 @@ def create_azure_ca():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully Created Azure Cloud Account')
     else:
         print('- Failed to create the Azure Cloud Account')
@@ -313,7 +300,7 @@ def get_czids():
     api_url = '{0}iaas/api/zones'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         cz_id = extract_values(json_data, 'id')
         return cz_id
     else:
@@ -325,7 +312,7 @@ def get_right_czid_vsphere(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base, czid)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         cz_name = extract_values(json_data, 'name')
         for x in cz_name:
             if 'RegionA01' in x:        # Looking for the CZ for vSphere
@@ -339,7 +326,7 @@ def get_right_czid_aws(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base, czid)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         cz_name = extract_values(json_data, 'name')
         for x in cz_name:
             if x == 'AWS Cloud Account / us-west-1':
@@ -353,7 +340,7 @@ def get_right_czid_azure(czid):
     api_url = '{0}iaas/api/zones/{1}'.format(api_url_base, czid)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         cz_name = extract_values(json_data, 'name')
         for x in cz_name:
             if x == 'Azure Cloud Account / westus':
@@ -368,7 +355,7 @@ def get_czid_aws(czid):
         api_url = '{0}iaas/api/zones/{1}'.format(api_url_base, x)
         response = requests.get(api_url, headers=headers1, verify=False)
         if response.status_code == 200:
-            json_data = json.loads(response.content.decode('utf-8'))
+            json_data = response.json()
             cz_name = extract_values(json_data, 'name')
             cz_name = cz_name[0]
             if cz_name == 'AWS-West-1 / us-west-1':
@@ -382,7 +369,7 @@ def get_projids():
     api_url = '{0}iaas/api/projects'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         proj_id = extract_values(json_data, 'id')
         return proj_id
     else:
@@ -394,7 +381,7 @@ def get_right_projid(projid):
     api_url = '{0}iaas/api/projects/{1}'.format(api_url_base, projid)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         proj_name = extract_values(json_data, 'name')
         for x in proj_name:
             if x == 'HOL Project':
@@ -408,7 +395,7 @@ def get_right_projid_rp(projid):
     api_url = '{0}iaas/api/projects/{1}'.format(api_url_base, projid)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         proj_name = extract_values(json_data, 'name')
         for x in proj_name:
             if x == 'Rainpole Project':
@@ -459,14 +446,15 @@ def create_project(vsphere, aws, azure):
                         "email": "holdev"
                     }
                 ],
-        "machineNamingTemplate": "${project.name}-${resource.image}-${###}",
+        "machineNamingTemplate": "${resource.name}-${###}",
         "sharedResources": "true"
     }
-    response = requests.post(api_url, headers=headers1,
-                             data=json.dumps(data), verify=False)
+    response = requests.post(api_url, headers=headers1,data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
+        project_id = extract_values(json_data, 'id')
         print('- Successfully created HOL Project')
+        return project_id[0]
     else:
         print('- Failed to create HOL Project')
 
@@ -522,11 +510,9 @@ def update_project(proj_Ids, vsphere, aws, azure):
                     "operationTimeout": 0,
                     "machineNamingTemplate" : "${resource.name}-${###}"
                 }
-                response = requests.patch(
-                    api_url, headers=headers1, data=json.dumps(data), verify=False)
+                response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
 
                 if response.status_code == 200:
-                    json_data = response.json()
                     print('- Successfully added cloud zones to HOL Project')
                     return project_id
 
@@ -590,7 +576,6 @@ def tag_aws_cz(cz_Ids):
                 response = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    json_data = json.loads(response.content.decode('utf-8'))
                     print('- Successfully Tagged AWS cloud zone')
                     return cloudzone_id
                 else:
@@ -620,7 +605,6 @@ def tag_azure_cz(cz_Ids):
                 response = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    json_data = json.loads(response.content.decode('utf-8'))
                     print('- Successfully tagged Azure cloud zone')
                     return cloudzone_id
                 else:
@@ -635,7 +619,7 @@ def get_azure_regionid():
     api_url = '{0}iaas/api/regions'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         region_id = extract_values(json_data, 'id')
         for x in region_id:
             api_url2 = '{0}iaas/api/regions/{1}'.format(api_url_base, x)
@@ -677,7 +661,6 @@ def create_azure_flavor():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully created Azure flavor mapping')
     else:
         print('- Failed to create Azure flavor mapping')
@@ -688,7 +671,7 @@ def get_aws_regionid():
     api_url = '{0}iaas/api/regions'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         region_id = extract_values(json_data, 'id')
         for x in region_id:
             api_url2 = '{0}iaas/api/regions/{1}'.format(api_url_base, x)
@@ -730,7 +713,6 @@ def create_aws_flavor():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully created AWS flavors')
     else:
         print('- Failed to created AWS flavors')
@@ -757,7 +739,6 @@ def create_aws_image():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully created AWS images')
     else:
         print('- Failed to created AWS images')
@@ -784,7 +765,6 @@ def create_azure_image():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully created Azure images')
     else:
         print('- Failed to created Azure images')
@@ -795,7 +775,7 @@ def get_computeids():
     api_url = '{0}iaas/api/fabric-computes'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         comp_id = extract_values(json_data, 'id')
     return(comp_id)
 
@@ -805,7 +785,7 @@ def tag_vsphere_clusters(computes):
         api_url = '{0}iaas/api/fabric-computes/{1}'.format(api_url_base, x)
         response = requests.get(api_url, headers=headers1, verify=False)
         if response.status_code == 200:
-            json_data = json.loads(response.content.decode('utf-8'))
+            json_data = response.json()
             cluster = extract_values(json_data, 'name')
             if "Workload" in cluster[0]:
                 ## This is a vSphere workload cluster - tag it ##
@@ -829,11 +809,63 @@ def tag_vsphere_clusters(computes):
     return None
 
 
+def add_github_integration():
+    # adds GitHub as an integration endpoint
+    api_url = '{0}provisioning/uerp/provisioning/mgmt/endpoints?external'.format(api_url_base)
+    data = {
+        "endpointProperties": {
+            "url": "https://api.github.com",
+            "privateKey": "7707ae2f643604708ffad4b5420cbd5a03797223",
+            "dcId": "onprem"
+        },
+        "customProperties": {
+            "isExternal": "true"
+        },
+        "endpointType": "com.github.saas",
+        "associatedEndpointLinks": [],
+        "name": "HOL Blueprint Repository",
+        "tagLinks": []
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        integrationSelfLink = json_data["documentSelfLink"]
+        integrationId = re.findall(r"([0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12})", integrationSelfLink, re.IGNORECASE)[0]
+        print('- Successfully added GitHub integration endpoint')
+    else:
+        print('- Failed to add GitHub integration endpoint')
+    return(integrationId)
+
+
+def configure_github(projId, gitId):
+    # adds GitHub blueprint integration with the HOL Project
+    api_url = '{0}content/api/sources'.format(api_url_base)
+    data = {
+        "name": "GitHub CS",
+        "typeId": "com.github",
+        "syncEnabled": "true",
+        "projectId": projId,
+        "config": {
+            "integrationId": gitId,
+            "repository": "vrealize-hol/hol-2121-lab-files",
+            "path": "blueprints",
+            "branch": "master",
+            "contentType": "blueprint"
+        }
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        print('- Successfully added blueprint repo to project')
+    else:
+        print('- Failed to add the blueprint repo to project')
+
+
+
 def get_fabric_network_ids():
     api_url = '{0}iaas/api/fabric-networks-vsphere'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         net_ids = extract_values(json_data, 'id')
     return(net_ids)
 
@@ -844,7 +876,7 @@ def update_networks(net_ids):
             api_url_base, x)
         response = requests.get(api_url, headers=headers1, verify=False)
         if response.status_code == 200:
-            json_data = json.loads(response.content.decode('utf-8'))
+            json_data = response.json()
             network = extract_values(json_data, 'name')
             if "VM-Region" in network[0]:
                 ## This is the vSphere VM network - update it ##
@@ -889,7 +921,6 @@ def create_ip_pool():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
         print('- Successfully created the IP pool')
     else:
         print('- Failed to create the IP pool')
@@ -900,7 +931,7 @@ def get_vsphere_region_id():
     api_url = '{0}iaas/api/regions'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
@@ -940,7 +971,7 @@ def get_vsphere_datastore_id():
     api_url = '{0}iaas/api/fabric-vsphere-datastores'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
@@ -984,7 +1015,7 @@ def get_pricing_card():
     api_url = '{0}price/api/private/pricing-cards'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
@@ -1049,7 +1080,7 @@ def get_blueprint_id(bpName):
     api_url = '{0}blueprint/api/blueprints'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
@@ -1086,9 +1117,7 @@ def add_bp_cat_source(projid):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = json.loads(response.content.decode('utf-8'))
-        itemsFound = json_data["itemsFound"]
-        itemsImported = json_data["itemsImported"]
+        json_data = response.json()
         sourceId = json_data["id"]
         print('- Successfully added blueprints as a catalog source')
         return sourceId
@@ -1117,7 +1146,7 @@ def get_cat_id():
     api_url = '{0}catalog/api/items'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
-        json_data = json.loads(response.content.decode('utf-8'))
+        json_data = response.json()
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
@@ -1203,13 +1232,6 @@ if access_key == 'not ready':  # we are not even getting an auth token from vRA 
 headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
-if not vra_ready():
-    print('\n\n\nvRA is not yet ready in this Hands On Lab pod - the provisioning service is not running')
-    print('Wait for the lab status to be *Ready* and then run this script again')
-    sys.exit()
-
-# vRA is ready - continue on
-
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
 result = get_vlp_urn()
 hol = True
@@ -1276,9 +1298,6 @@ if hol:
 print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
 
 print('Creating cloud accounts')
-#vsphere_region_ids = get_vsphere_regions()
-
-#create_vsphere_ca(vsphere_region_ids)
 create_aws_ca()
 create_azure_ca()
 
@@ -1292,10 +1311,12 @@ print('Tagging vSphere workload clusters')
 compute = get_computeids()
 tag_vsphere_clusters(compute)
 
-#create_project(vsphere_cz,aws_cz,azure_cz)
-print('Udating projects')
-project_ids = get_projids()
-hol_project = update_project(project_ids,vsphere_cz,aws_cz,azure_cz)
+print('Creating the HOL Project')
+hol_project = create_project(vsphere_cz,aws_cz,azure_cz)
+
+print('Creating GitHub blueprint repo integration')
+gitId = add_github_integration()
+configure_github(hol_project, gitId)
 
 print('Update the vSphere networking')
 networks = get_fabric_network_ids()
@@ -1320,7 +1341,7 @@ print('Configuring pricing')
 pricing_card_id = get_pricing_card()
 modify_pricing_card(pricing_card_id)
 
-print('Adding blueprint to the catalog')
+print('Adding blueprints to the catalog')
 blueprint_id = get_blueprint_id('Ubuntu 18')
 release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('MOAD-Retail-LB')
