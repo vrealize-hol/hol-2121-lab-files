@@ -449,7 +449,10 @@ def create_project(vsphere, aws, azure):
         "machineNamingTemplate": "${resource.name}-${###}",
         "sharedResources": "true"
     }
-    response = requests.post(api_url, headers=headers1,data=json.dumps(data), verify=False)
+    response = requests.post(api_url, headers=headers1,
+                             data=json.dumps(data), verify=False)
+    print(response)
+    print(response.text)
     if response.status_code == 201:
         json_data = response.json()
         project_id = extract_values(json_data, 'id')
@@ -467,7 +470,7 @@ def update_project(proj_Ids, vsphere, aws, azure):
                 api_url = '{0}iaas/api/projects/{1}'.format(
                     api_url_base, project_id)
                 data = {
-                    "name" : "HOL Project",
+                    "name": "HOL Project",
                     "zoneAssignmentConfigurations": [
                         {
                             "zoneId": vsphere,
@@ -508,9 +511,10 @@ def update_project(proj_Ids, vsphere, aws, azure):
                     "sharedResources": "true",
                     "constraints": {},
                     "operationTimeout": 0,
-                    "machineNamingTemplate" : "${resource.name}-${###}"
+                    "machineNamingTemplate": "${resource.name}-${###}"
                 }
-                response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+                response = requests.patch(
+                    api_url, headers=headers1, data=json.dumps(data), verify=False)
 
                 if response.status_code == 200:
                     print('- Successfully added cloud zones to HOL Project')
@@ -811,7 +815,8 @@ def tag_vsphere_clusters(computes):
 
 def add_github_integration():
     # adds GitHub as an integration endpoint
-    api_url = '{0}provisioning/uerp/provisioning/mgmt/endpoints?external'.format(api_url_base)
+    api_url = '{0}provisioning/uerp/provisioning/mgmt/endpoints?external'.format(
+        api_url_base)
     data = {
         "endpointProperties": {
             "url": "https://api.github.com",
@@ -823,18 +828,20 @@ def add_github_integration():
         },
         "endpointType": "com.github.saas",
         "associatedEndpointLinks": [],
-        "name": "HOL Blueprint Repository",
+        "name": "HOL Lab Files",
         "tagLinks": []
     }
-    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    response = requests.post(api_url, headers=headers1,
+                             data=json.dumps(data), verify=False)
     if response.status_code == 200:
         json_data = response.json()
         integrationSelfLink = json_data["documentSelfLink"]
-        integrationId = re.findall(r"([0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12})", integrationSelfLink, re.IGNORECASE)[0]
+        integrationId = re.findall(
+            r"([0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12})", integrationSelfLink, re.IGNORECASE)[0]
         print('- Successfully added GitHub integration endpoint')
+        return(integrationId)
     else:
         print('- Failed to add GitHub integration endpoint')
-    return(integrationId)
 
 
 def configure_github(projId, gitId):
@@ -853,12 +860,12 @@ def configure_github(projId, gitId):
             "contentType": "blueprint"
         }
     }
-    response = requests.post(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    response = requests.post(api_url, headers=headers1,
+                             data=json.dumps(data), verify=False)
     if response.status_code == 201:
         print('- Successfully added blueprint repo to project')
     else:
         print('- Failed to add the blueprint repo to project')
-
 
 
 def get_fabric_network_ids():
@@ -1215,6 +1222,59 @@ def get_lab_user():
     return(assigned_account)
 
 
+def getOrg(headers):
+    url = f"{api_url_base}csp/gateway/am/api/loggedin/user/orgs"
+    response = requests.request(
+        "GET", url, headers=headers, verify=False)
+    return response.json()['items'][0]['id']
+
+
+def getEndpoints(headers):
+    url = f"{api_url_base}provisioning/uerp/provisioning/mgmt/endpoints?expand"
+    response = requests.request("GET", url, headers=headers, verify=False)
+    if response.status_code == 200:
+        print("- Successfully retrieved endpoint list")    
+        endpointList = {}
+        for endpoint_link in response.json()['documentLinks']:
+            endpoint = response.json()['documents'][endpoint_link]
+            endpointList[endpoint['endpointType']] = endpoint['documentSelfLink']
+        return endpointList
+
+
+def addCustomResource(headers, vro_endpoint, resource_file):
+    resource_content = json.loads(open(resource_file).read())
+    resource_content['mainActions']['create']['endpointLink'] = vro_endpoint
+    resource_content['mainActions']['delete']['endpointLink'] = vro_endpoint
+
+    url = f"{api_url_base}form-service/api/custom/resource-types"
+    response = requests.request(
+        "POST", url, headers=headers, data=json.dumps(resource_content), verify=False)
+    if response.status_code == 200:
+        print("- Successfully added Custom Resource")
+    else:
+        print(f"- Failed to add Custom Resource ({response.status_code})")
+
+
+def addResourceAction(headers, vro_endpoint, org, resource_file):
+    resource_content = json.loads(open(resource_file).read())
+    resource_content['runnableItem']['endpointLink'] = vro_endpoint
+    resource_content['orgId'] = org
+    resource_content['formDefinition']['tenant'] = org
+
+    url = f"{api_url_base}form-service/api/custom/resource-actions"
+    response = requests.request(
+        "POST", url, headers=headers, data=json.dumps(resource_content), verify=False)
+    if response.status_code == 200:
+        response = requests.request(
+            "POST", url, headers=headers, data=json.dumps(resource_content), verify=False)
+        if response.status_code == 200:
+            print("- Successfully added Custom Action")
+        else:
+            print(f"- Failed to add Custom Action ({response.status_code})")
+    else:
+        print(f"- Failed to add Custom Action ({response.status_code})")
+
+
 ##### MAIN #####
 # find out if vRA is ready. if not ready we need to exit or the configuration will fail
 headers = {'Content-Type': 'application/json'}
@@ -1251,8 +1311,8 @@ if 'No urn' in result:
 else:
     vlp = result
 
+# this pod is running as a Hands On Lab
 if hol:
-    # this pod is running as a Hands On Lab
     lab_user = get_lab_user()  # find out who is assigned to this lab
 
     # find out if this pod already has credentials assigned
@@ -1312,11 +1372,14 @@ compute = get_computeids()
 tag_vsphere_clusters(compute)
 
 print('Creating the HOL Project')
-hol_project = create_project(vsphere_cz,aws_cz,azure_cz)
+hol_project = create_project(vsphere_cz, aws_cz, azure_cz)
 
 print('Creating GitHub blueprint repo integration')
 gitId = add_github_integration()
 configure_github(hol_project, gitId)
+
+print('Waiting for git repo to sync')
+time.sleep(20)
 
 print('Update the vSphere networking')
 networks = get_fabric_network_ids()
@@ -1347,16 +1410,23 @@ release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('MOAD-Retail-LB')
 release_blueprint(blueprint_id, 1)
 bp_source = add_bp_cat_source(hol_project)
-share_bps(bp_source,hol_project)
+share_bps(bp_source, hol_project)
 
+print('Adding Custom Resources and Actions')
+org = getOrg(headers1)
+endpoints = getEndpoints(headers1)
+addCustomResource(headers1, endpoints['vro'],
+                  './script_files/resource-ad-user.json')
+addResourceAction(
+    headers1, endpoints['vro'], org, './script_files/resource-action-vmotion.json')
 
 ##########################################
-#API calls below as holuser
+# API calls below as holuser
 ##########################################
 
-access_key = get_token("holuser","VMware1!")
+access_key = get_token("holuser", "VMware1!")
 headers1 = {'Content-Type': 'application/json',
-           'Authorization': 'Bearer {0}'.format(access_key)}
+            'Authorization': 'Bearer {0}'.format(access_key)}
 
 
 print('Deploying vSphere VM')
