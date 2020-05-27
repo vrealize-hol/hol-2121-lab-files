@@ -1,6 +1,6 @@
 formatVersion: 1
 name: Ansible Base
-version: 1.0.0
+version: 1
 inputs:
   image:
     type: string
