@@ -25,7 +25,7 @@ inputs:
     default: root
     format: hidden
 resources:
-   linuxVM:
+  linuxVM:
     type: Cloud.vSphere.Machine
     properties:
       image: '${input.image}'
