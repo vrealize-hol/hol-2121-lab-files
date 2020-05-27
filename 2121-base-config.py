@@ -461,6 +461,32 @@ def create_project(vsphere, aws, azure):
     else:
         print('- Failed to create HOL Project')
 
+def create_sd_project():
+    api_url = '{0}iaas/api/projects'.format(api_url_base)
+    data = {
+        "name": "Service Desk Project",
+                "zoneAssignmentConfigurations": [],
+        "administrators": [
+                    {
+                        "email": "holadmin"
+                    }
+                ],
+        "members": [
+                    {
+                        "email": "holservicedesk"
+                    }
+                ],
+        "sharedResources": "true"
+    }
+    response = requests.post(api_url, headers=headers1,
+                             data=json.dumps(data), verify=False)
+    print(response)
+    print(response.text)
+    if response.status_code == 201:
+        print('- Successfully created the Service Desk Project')
+    else:
+        print('- Failed to create the Service Desk Project')
+
 
 def update_project(proj_Ids, vsphere, aws, azure):
     if proj_Ids is not None:
@@ -1373,6 +1399,9 @@ tag_vsphere_clusters(compute)
 
 print('Creating the HOL Project')
 hol_project = create_project(vsphere_cz, aws_cz, azure_cz)
+
+print('Creating the Service Desk Project')
+create_sd_project()
 
 print('Creating GitHub blueprint repo integration')
 gitId = add_github_integration()
