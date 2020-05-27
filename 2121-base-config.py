@@ -761,7 +761,7 @@ def create_aws_image():
                 "name": "ami-a83d0cc8"
             },
             "Ubuntu18": {
-                "name": "hol-ubuntu16-apache"
+                "name": "ami-0365b50e7a63e3bf1"
             }
         },
         "regionId": aws_id
