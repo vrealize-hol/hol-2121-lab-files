@@ -1,0 +1,48 @@
+formatVersion: 1
+name: Ansible Base
+version: 1.0.0
+inputs:
+  image:
+    type: string
+    enum:
+      - ubuntu18
+      - centos7
+    default: ubuntu18
+  size:
+    type: string
+    enum:
+      - tiny
+      - small
+      - medium
+      - large
+    default: tiny
+  ansible-key:
+    type: string
+    default: #SSH GOES HERE
+    format: hidden
+  ansible-user:
+    type: string
+    default: root
+    format: hidden
+resources:
+   linuxVM:
+    type: Cloud.vSphere.Machine
+    properties:
+      image: '${input.image}'
+      flavor: '${input.size}'
+      cloudConfig: |
+        #cloud-config
+        output: {all: '| tee -a /var/log/cloud-init-output.log'}
+        runcmd:
+        - sudo echo '${input.ansible-key}' >> /root/.ssh/authorized_keys
+      constraints:
+        - tag: 'cloud:vsphere'
+      networks:
+        - network: '${resource.vsphere_network.id}'
+          assignment: static
+  vsphere_network:
+    type: Cloud.vSphere.Network
+    properties:
+      networkType: existing
+      constraints:
+        - tag: 'net:vsphere'
