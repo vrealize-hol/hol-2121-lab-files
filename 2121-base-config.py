@@ -1,14 +1,3 @@
-####### I M P O R T A N T #######
-# If you are deploying this vPod dircetly in OneCloud and not through the Hands On Lab portal,
-# you must uncomment the following lines and supply your own set of AWS and Azure keys
-#################################
-# awsid = "put your AWS access key here"
-# awssec = "put your AWS secret hey here"
-# azsub = "put your azure subscription id here"
-# azten = "put your azure tenant id here"
-# azappkey = "put your azure application key here"
-# azappid = "put your azure application id here"
-# also change the "local_creds" value below to True
 import urllib3
 import sys
 import re
@@ -24,9 +13,22 @@ import os
 import time
 import requests
 import json
-local_creds = True
-
 urllib3.disable_warnings()
+
+
+####### I M P O R T A N T #######
+# If you are deploying this vPod dircetly in OneCloud and not through the Hands On Lab portal,
+# you must uncomment the following lines and supply your own set of AWS and Azure keys
+#################################
+# awsid = "put your AWS access key here"
+# awssec = "put your AWS secret hey here"
+# azsub = "put your azure subscription id here"
+# azten = "put your azure tenant id here"
+# azappkey = "put your azure application key here"
+# azappid = "put your azure application id here"
+# also change the "local_creds" value below to True
+
+local_creds = True
 
 github_key = os.getenv('github_key')
 
@@ -451,8 +453,6 @@ def create_project(vsphere, aws, azure):
     }
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
-    print(response)
-    print(response.text)
     if response.status_code == 201:
         json_data = response.json()
         project_id = extract_values(json_data, 'id')
@@ -761,7 +761,7 @@ def create_aws_image():
                 "name": "ami-a83d0cc8"
             },
             "Ubuntu18": {
-                "name": "ami-0365b50e7a63e3bf1"
+                "name": "hol-ubuntu16-apache"
             }
         },
         "regionId": aws_id
@@ -1175,7 +1175,7 @@ def share_bps(source, project):
         return None
 
 
-def get_cat_id():
+def get_cat_id(item_name):
     api_url = '{0}catalog/api/items'.format(api_url_base)
     response = requests.get(api_url, headers=headers1, verify=False)
     if response.status_code == 200:
@@ -1183,8 +1183,8 @@ def get_cat_id():
         content = json_data["content"]
         count = json_data["totalElements"]
         for x in range(count):
-            # Looking to match the Ubuntu 18 blueprint catalog item
-            if 'Ubuntu 18' in content[x]["name"]:
+            # Looking to match the named catalog item
+            if item_name in content[x]["name"]:
                 cat_id = (content[x]["id"])
                 return cat_id
     else:
@@ -1299,6 +1299,45 @@ def addResourceAction(headers, vro_endpoint, org, resource_file):
             print(f"- Failed to add Custom Action ({response.status_code})")
     else:
         print(f"- Failed to add Custom Action ({response.status_code})")
+
+
+def create_approval_policy(catId, projId):
+    # creates an approval policy
+    api_url = '{0}policy/api/policies'.format(api_url_base)
+    data = {
+        "name" : "Azure approval",
+        "description" : "Approval policy for a catalog item that deploys to Azure",
+        "typeId" : "com.vmware.policy.approval",
+        "enforcementType" : "HARD",
+        "projectId" : projId,
+        "definition" : {
+            "level" : 1,
+            "approvalMode" : "ANY_OF",
+            "autoApprovalDecision" : "APPROVE",
+            "approvers" : [
+                "USER:holadmin"
+                ],
+            "autoApprovalExpiry" :1,
+            "actions" :[
+                "Deployment.Create"
+                ]
+            },
+        "criteria" :{
+            "matchExpression" :[
+                {
+                    "key" :"catalogItemId",
+                    "operator" :"eq",
+                    "value" :catId
+                }
+            ]
+        }
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data) ,verify=False)
+    if response.status_code == 201:
+        print('- Successfully created the approval policy')
+    else:
+        print('- Failed to create the approval policy')
+
 
 
 ##### MAIN #####
@@ -1438,6 +1477,10 @@ blueprint_id = get_blueprint_id('Ubuntu 18')
 release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('MOAD-Retail-LB')
 release_blueprint(blueprint_id, 1)
+blueprint_id = get_blueprint_id('Simple Ubuntu Machine')
+release_blueprint(blueprint_id, 1)
+blueprint_id = get_blueprint_id('Azure Machine')
+release_blueprint(blueprint_id, 1)
 bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source, hol_project)
 
@@ -1449,6 +1492,10 @@ addCustomResource(headers1, endpoints['vro'],
 addResourceAction(
     headers1, endpoints['vro'], org, './script_files/resource-action-vmotion.json')
 
+print('Creating the approval policy')
+catalog_item = get_cat_id('Azure Machine')
+create_approval_policy(catalog_item, hol_project)
+
 ##########################################
 # API calls below as holuser
 ##########################################
@@ -1459,5 +1506,5 @@ headers1 = {'Content-Type': 'application/json',
 
 
 print('Deploying vSphere VM')
-catalog_item = get_cat_id()
+catalog_item = get_cat_id('Ubuntu 18')
 deploy_cat_item(catalog_item, hol_project)
