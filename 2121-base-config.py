@@ -1481,6 +1481,8 @@ blueprint_id = get_blueprint_id('Simple Ubuntu Machine')
 release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('Azure Machine')
 release_blueprint(blueprint_id, 1)
+blueprint_id = get_blueprint_id('Count-vms')
+release_blueprint(blueprint_id, 1)
 bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source, hol_project)
 
