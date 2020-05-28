@@ -1072,7 +1072,7 @@ def modify_pricing_card(cardid):
             {
                 "itemName": "vcpu",
                 "metering": {
-                    "baseRate": 29,
+                    "baseRate": 1,
                     "chargePeriod": "MONTHLY",
                     "chargeOnPowerState": "ALWAYS",
                     "chargeBasedOn": "USAGE"
@@ -1081,7 +1081,7 @@ def modify_pricing_card(cardid):
             {
                 "itemName": "memory",
                 "metering": {
-                    "baseRate": 18,
+                    "baseRate": 7.35,
                     "chargePeriod": "MONTHLY",
                     "chargeOnPowerState": "ALWAYS",
                     "chargeBasedOn": "USAGE",
@@ -1091,7 +1091,7 @@ def modify_pricing_card(cardid):
             {
                 "itemName": "storage",
                 "metering": {
-                    "baseRate": 0.13,
+                    "baseRate": 0.1,
                     "chargePeriod": "MONTHLY",
                     "chargeOnPowerState": "ALWAYS",
                     "chargeBasedOn": "USAGE",
