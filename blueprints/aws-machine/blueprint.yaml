@@ -1,0 +1,12 @@
+formatVersion: 1
+name: AWS Machine
+version: 1
+inputs: {}
+resources:
+  Cloud_Machine_1:
+    type: Cloud.Machine
+    properties:
+      image: Ubuntu18
+      flavor: tiny
+      constraints: 
+        - tag: cloud:aws
