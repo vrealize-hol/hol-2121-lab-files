@@ -1490,9 +1490,9 @@ print('Adding Custom Resources and Actions')
 org = getOrg(headers1)
 endpoints = getEndpoints(headers1)
 addCustomResource(headers1, endpoints['vro'],
-                  './resource-ad-user.json')
+                  './automation/resource-ad-user.json')
 addResourceAction(
-    headers1, endpoints['vro'], org, './resource-action-vmotion.json')
+    headers1, endpoints['vro'], org, './automation/resource-action-vmotion.json')
 
 print('Creating the approval policy')
 catalog_item = get_cat_id('Azure Machine')
