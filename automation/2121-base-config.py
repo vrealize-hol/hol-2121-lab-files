@@ -882,7 +882,7 @@ def configure_github(projId, gitId):
             "integrationId": gitId,
             "repository": "vrealize-hol/hol-2121-lab-files",
             "path": "blueprints",
-            "branch": "master",
+            "branch": "sandbox",
             "contentType": "blueprint"
         }
     }
