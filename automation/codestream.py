@@ -29,20 +29,16 @@ def import_pipelines(pipeNames):
     api_url = '{0}codestream/api/import'.format(api_url_base)
     count = len(pipeNames)
     for i in range(count):
-        name = pipeNames[i]
-        response = requests.patch(api_url, headers=headers1, verify=False)
+        fname = pipeNames[i]
+        fileName = './automation/', fname, '.yaml'
+        file = open(fileName, 'r')
+        payload = file.read()
+        response = requests.post(api_url, headers=headers2, data=payload, verify=False)
         if response.status_code == 200:
-            json_data = response.json()
-            content = json_data["content"]
-            count = json_data["totalElements"]
-            arr = []
-            for i in range(count):
-                Id = content[i]["id"]
-                arr.append(Id)
-            return arr
+            print('- Imported', fname, 'pipeline')
         else:
-            print('- Failed get custom resrouce actions')
-            return None
+            print('- Failed to imort', fname, 'pipeline')
+
 
 
 def delete_custom_resource_actions(actions):
@@ -96,14 +92,14 @@ headers = {'Content-Type': 'application/json'}
 access_key = get_token("admin","VMware1!")
 headers1 = {'Content-Type': 'application/json',
            'Authorization': 'Bearer {0}'.format(access_key)}
+headers2 = {'Content-Type': 'application/x-yaml',
+           'Authorization': 'Bearer {0}'.format(access_key)}
 
 
 print('Importing Code Stream pipelines')
 pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration']
 import_pipelines(pipe_names)
-pipeIds = get_pipelines()
+#pipeIds = get_pipelines()
 
-print('Deleting custom resources')
-resourceIds = get_custom_resources()
-delete_custom_resources(resourceIds)
+
 
