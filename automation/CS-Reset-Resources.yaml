@@ -1,0 +1,38 @@
+---
+project: Lab Automation Project
+kind: PIPELINE
+name: Reset Resources
+icon: organization,left, is-warm-grey
+enabled: true
+concurrency: 10
+workspace:
+  endpoint: ''
+  image: ''
+  registry: ''
+  path: ''
+  limits:
+    cpu: 1.0
+    memory: 512
+stageOrder:
+- Delete Resource Actions and Cusom Resources
+stages:
+  Delete Resource Actions and Cusom Resources:
+    taskOrder:
+    - Remove Resource Actions
+    tasks:
+      Remove Resource Actions:
+        type: PowerShell
+        input:
+          script: |
+            Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope CurrentUser
+            python .\2121-delete-custom.py
+          username: administrator
+          password: VMware1!
+          useTLS: false
+          trustCert: false
+          host: 192.168.110.10
+          workingDirectory: C:\hol-2121-lab-files
+          arguments: [
+            ]
+          environmentVariables: {
+            }
