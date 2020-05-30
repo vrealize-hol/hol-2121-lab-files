@@ -1409,6 +1409,22 @@ def enable_pipelines(Ids):
         else:
             print('- Failed to enable pipeline')
 
+def is_configured():
+    # checks to see if vRA is already configured
+    api_url = '{0}iaas/api/cloud-accounts'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        caTypes = extract_values(json_data, 'cloudAccountType')
+        for x in caTypes:
+            if 'azure' in x: 
+                return True
+        return False
+    else:
+        print('Could not get cloud accounts')
+
+
+
 
 ##### MAIN #####
 # find out if vRA is ready. if not ready we need to exit or the configuration will fail
@@ -1428,6 +1444,12 @@ headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 headers2 = {'Content-Type': 'application/x-yaml',
             'Authorization': 'Bearer {0}'.format(access_key)}
+
+# check to see if vRA is already configured and exit if it is
+if is_configured():
+    print('vRA is already configured')
+    print('... exiting')
+    quit()
 
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
 result = get_vlp_urn()
