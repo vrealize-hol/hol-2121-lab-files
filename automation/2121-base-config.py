@@ -1082,9 +1082,9 @@ def get_pricing_card():
         return None
 
 def sync_price():
-    url = "{0}price/api/sync-price-task"
+    url = f"{api_url_base}price/api/sync-price-task"
     response = requests.request(
-        "POST", url, headers=headers, data=json.dumps({}), verify=False)
+        "POST", url, headers=headers1, data=json.dumps({}), verify=False)
     if response.status_code == 202:
         print('- Successfully synced prices')
     else:
