@@ -1081,13 +1081,13 @@ def get_pricing_card():
         print('- Failed to get default pricing card')
         return None
 
-def sync_price()
+def sync_price():
     url = "{0}price/api/sync-price-task"
     response = requests.request(
         "POST", url, headers=headers, data=json.dumps({}), verify=False)
     if response.status_code == 202:
         print('- Successfully synced prices')
-    else
+    else:
         print(f'- Failed to sync prices ({response.status_code})')
 
 def modify_pricing_card(cardid):
