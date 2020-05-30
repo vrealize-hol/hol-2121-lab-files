@@ -25,7 +25,7 @@ stages:
         input:
           script: |
             Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope CurrentUser
-            python .\2121-reset-config.py
+            python .\automation\2121-reset-config.py
           username: administrator
           password: VMware1!
           useTLS: false

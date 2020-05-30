@@ -456,10 +456,33 @@ def create_project(vsphere, aws, azure):
     if response.status_code == 201:
         json_data = response.json()
         project_id = extract_values(json_data, 'id')
-        print('- Successfully created HOL Project')
+        print('- Successfully created the HOL Project')
         return project_id[0]
     else:
-        print('- Failed to create HOL Project')
+        print('- Failed to create the HOL Project')
+
+
+def create_la_project():
+    api_url = '{0}iaas/api/projects'.format(api_url_base)
+    data = {
+        "name": "Lab Automation Project",
+        "administrators": [
+                    {
+                        "email": "holadmin"
+                    }
+                ],
+        "sharedResources": "true"
+    }
+    response = requests.post(api_url, headers=headers1,
+                             data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        json_data = response.json()
+        project_id = extract_values(json_data, 'id')
+        print('- Successfully created the Lab Automation project')
+        return project_id[0]
+    else:
+        print('- Failed to create the Lab Automation project')
+
 
 def create_sd_project():
     api_url = '{0}iaas/api/projects'.format(api_url_base)
@@ -480,8 +503,6 @@ def create_sd_project():
     }
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
-    print(response)
-    print(response.text)
     if response.status_code == 201:
         print('- Successfully created the Service Desk Project')
     else:
@@ -1347,6 +1368,47 @@ def create_approval_policy(catId, projId):
         print('- Failed to create the approval policy')
 
 
+def import_pipelines(pipeNames):
+    # imports code stream pipelines contained in the array of names
+    api_url = '{0}codestream/api/import'.format(api_url_base)
+    count = len(pipeNames)
+    for i in range(count):
+        fname = pipeNames[i]
+        fileName = './automation/' + fname + '.yaml'
+        file = open(fileName, 'r')
+        payload = file.read()
+        response = requests.post(api_url, headers=headers2, data=payload, verify=False)
+        if response.status_code == 200:
+            print('- Imported', fname, 'pipeline')
+        else:
+            print('- Failed to imort', fname, 'pipeline')
+
+
+def get_pipelines():
+    # returns an array containing all of the pipeline ids
+    api_url = '{0}codestream/api/pipelines'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        Ids = extract_values(json_data, 'id')
+        return Ids
+    else:
+        print('- Failed to get pipelines')
+        return None
+
+
+def enable_pipelines(Ids):
+    # enables all pipelines the array
+    count = len(Ids)
+    data = { "enabled": "true"}
+    for i in range(count):
+        api_url = '{0}codestream/api/pipelines/{1}'.format(api_url_base, Ids[i])
+        response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+        if response.status_code == 200:
+            print('- Enabled pipeline')
+        else:
+            print('- Failed to enable pipeline')
+
 
 ##### MAIN #####
 # find out if vRA is ready. if not ready we need to exit or the configuration will fail
@@ -1363,6 +1425,8 @@ if access_key == 'not ready':  # we are not even getting an auth token from vRA 
     sys.exit()
 
 headers1 = {'Content-Type': 'application/json',
+            'Authorization': 'Bearer {0}'.format(access_key)}
+headers2 = {'Content-Type': 'application/x-yaml',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
@@ -1444,10 +1508,9 @@ print('Tagging vSphere workload clusters')
 compute = get_computeids()
 tag_vsphere_clusters(compute)
 
-print('Creating the HOL Project')
+print('Creating projects')
 hol_project = create_project(vsphere_cz, aws_cz, azure_cz)
-
-print('Creating the Service Desk Project')
+la_project = create_la_project()
 create_sd_project()
 
 print('Creating GitHub blueprint repo integration')
@@ -1484,9 +1547,7 @@ sync_price()
 print('Adding blueprints to the catalog')
 blueprint_id = get_blueprint_id('Ubuntu 18')
 release_blueprint(blueprint_id, 1)
-blueprint_id = get_blueprint_id('MOAD-Retail-LB')
-release_blueprint(blueprint_id, 1)
-blueprint_id = get_blueprint_id('Simple Ubuntu Machine')
+blueprint_id = get_blueprint_id('AWS Machine')
 release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('Azure Machine')
 release_blueprint(blueprint_id, 1)
@@ -1506,6 +1567,12 @@ addResourceAction(
 print('Creating the approval policy')
 catalog_item = get_cat_id('Azure Machine')
 create_approval_policy(catalog_item, hol_project)
+
+print('Importing Code Stream pipelines')
+pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration']
+import_pipelines(pipe_names)
+pipeIds = get_pipelines()
+enable_pipelines(pipeIds)
 
 ##########################################
 # API calls below as holuser
