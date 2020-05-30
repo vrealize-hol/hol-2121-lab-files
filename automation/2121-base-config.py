@@ -503,8 +503,6 @@ def create_sd_project():
     }
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
-    print(response)
-    print(response.text)
     if response.status_code == 201:
         print('- Successfully created the Service Desk Project')
     else:
