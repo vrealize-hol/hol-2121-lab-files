@@ -24,28 +24,32 @@ urllib3.disable_warnings()
 # awssec = "put your AWS secret hey here"
 # azsub = "put your azure subscription id here"
 # azten = "put your azure tenant id here"
-# azappkey = "put your azure application key here"
 # azappid = "put your azure application id here"
+# azappkey = "put your azure application key here"
 # also change the "local_creds" value below to True
-
 local_creds = True
 
 github_key = os.getenv('github_key')
 
 # Remove from final pod
-awsid = os.getenv('temp_awsid')
-awssec = os.getenv('temp_awssec')
-azsub = os.getenv('temp_azsub')
-azten = os.getenv('temp_azten')
-azappkey = os.getenv('temp_azappkey')
-azappid = os.getenv('temp_azappid')
+keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
+json_data = json.loads(keyfile)
+awsid = json_data['aws_access_key']
+awssec = json_data['aws_secret_key']
+azsub = json_data['azure_subscription_id']
+azten = json_data['azure_tenant_id']
+azappid = json_data['azure_application_id']
+azappkey = json_data['azure_application_key']
+subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
 
 if local_creds != True:
-    d_id = os.getenv('D_ID')
-    d_sec = os.getenv('D_SEC')
-    d_reg = os.getenv('D_REG')
-
+    keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
+    json_data = json.loads(keyfile)
+    d_id = json_data['d_id']
+    d_sec = json_data['d_sec']
+    d_reg = json_data['d_reg']
+    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
