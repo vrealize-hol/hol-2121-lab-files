@@ -1157,7 +1157,7 @@ def get_blueprint_id(bpName):
         return None
 
 
-def release_bluelog.write(bpid, ver):
+def release_blueprint(bpid, ver):
     api_url = '{0}blueprint/api/blueprints/{1}/versions/{2}/actions/release'.format(
         api_url_base, bpid, ver)
     data = {}
@@ -1571,13 +1571,13 @@ sync_price()
 
 log.write('Adding blueprints to the catalog/n')
 blueprint_id = get_blueprint_id('Ubuntu 18')
-release_bluelog.write(blueprint_id, 1)
+release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('AWS Machine')
-release_bluelog.write(blueprint_id, 1)
+release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('Azure Machine')
-release_bluelog.write(blueprint_id, 1)
+release_blueprint(blueprint_id, 1)
 blueprint_id = get_blueprint_id('Count-vms')
-release_bluelog.write(blueprint_id, 1)
+release_blueprint(blueprint_id, 1)
 bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source, hol_project)
 
