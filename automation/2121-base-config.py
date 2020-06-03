@@ -15,7 +15,6 @@ import requests
 import json
 urllib3.disable_warnings()
 
-
 ####### I M P O R T A N T #######
 # If you are deploying this vPod dircetly in OneCloud and not through the Hands On Lab portal,
 # you must uncomment the following lines and supply your own set of AWS and Azure keys
@@ -30,6 +29,7 @@ urllib3.disable_warnings()
 local_creds = True
 
 github_key = os.getenv('github_key')
+log = open("C:\\hol\\vraConfig.log", "w")
 
 # Remove from final pod
 keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
@@ -41,7 +41,6 @@ azten = json_data['azure_tenant_id']
 azappid = json_data['azure_application_id']
 azappkey = json_data['azure_application_key']
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
-
 
 if local_creds != True:
     keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
@@ -62,7 +61,6 @@ proxies = {
 }
 
 slack_api_key = os.getenv('SLACK_KEY')
-
 
 def get_vlp_urn():
     # determine current pod's URN (unique ID) using Main Console guestinfo
@@ -221,10 +219,10 @@ def get_vsphere_regions():
     if response.status_code == 200:
         json_data = response.json()
         regions = json_data["externalRegionIds"]
-        print('- Successfully got vSphere Datacenters')
+        log.write('- Successfully got vSphere Datacenters/n')
         return(regions)
     else:
-        print('- Failed to get vSphere Datacenters')
+        log.write('- Failed to get vSphere Datacenters/n')
         return None
 
 
@@ -245,9 +243,9 @@ def create_vsphere_ca(region_ids):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully Created vSphere Cloud Account')
+        log.write('- Successfully Created vSphere Cloud Account/n')
     else:
-        print('- Failed to Create the vSphere Cloud Account')
+        log.write('- Failed to Create the vSphere Cloud Account/n')
         return None
 
 
@@ -271,9 +269,9 @@ def create_aws_ca():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully Created AWS Cloud Account')
+        log.write('- Successfully Created AWS Cloud Account/n')
     else:
-        print('- Failed to Create the AWS Cloud Account')
+        log.write('- Failed to Create the AWS Cloud Account/n')
         return None
 
 
@@ -296,9 +294,9 @@ def create_azure_ca():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully Created Azure Cloud Account')
+        log.write('- Successfully Created Azure Cloud Account/n')
     else:
-        print('- Failed to create the Azure Cloud Account')
+        log.write('- Failed to create the Azure Cloud Account/n')
         return None
 
 
@@ -310,7 +308,7 @@ def get_czids():
         cz_id = extract_values(json_data, 'id')
         return cz_id
     else:
-        print('- Failed to get the cloud zone IDs')
+        log.write('- Failed to get the cloud zone IDs/n')
         return None
 
 
@@ -324,7 +322,7 @@ def get_right_czid_vsphere(czid):
             if 'RegionA01' in x:        # Looking for the CZ for vSphere
                 return czid
     else:
-        print('- Failed to get the right vSphere cloud zone ID')
+        log.write('- Failed to get the right vSphere cloud zone ID/n')
         return None
 
 
@@ -338,7 +336,7 @@ def get_right_czid_aws(czid):
             if x == 'AWS Cloud Account / us-west-1':
                 return czid
     else:
-        print('- Failed to get the right AWS cloud zone ID')
+        log.write('- Failed to get the right AWS cloud zone ID/n')
         return None
 
 
@@ -352,7 +350,7 @@ def get_right_czid_azure(czid):
             if x == 'Azure Cloud Account / westus':
                 return czid
     else:
-        print('- Failed to get Azure cloud zone ID')
+        log.write('- Failed to get Azure cloud zone ID/n')
         return None
 
 
@@ -367,7 +365,7 @@ def get_czid_aws(czid):
             if cz_name == 'AWS-West-1 / us-west-1':
                 return x
         else:
-            print('- Failed to get the AWS cloud zone ID')
+            log.write('- Failed to get the AWS cloud zone ID/n')
             return None
 
 
@@ -379,7 +377,7 @@ def get_projids():
         proj_id = extract_values(json_data, 'id')
         return proj_id
     else:
-        print('- Failed to get the project IDs')
+        log.write('- Failed to get the project IDs/n')
         return None
 
 
@@ -393,7 +391,7 @@ def get_right_projid(projid):
             if x == 'HOL Project':
                 return projid
     else:
-        print('- Failed to get the right project ID')
+        log.write('- Failed to get the right project ID/n')
         return None
 
 
@@ -407,7 +405,7 @@ def get_right_projid_rp(projid):
             if x == 'Rainpole Project':
                 return projid
     else:
-        print('- Failed to get the right project ID')
+        log.write('- Failed to get the right project ID/n')
         return None
 
 
@@ -460,10 +458,10 @@ def create_project(vsphere, aws, azure):
     if response.status_code == 201:
         json_data = response.json()
         project_id = extract_values(json_data, 'id')
-        print('- Successfully created the HOL Project')
+        log.write('- Successfully created the HOL Project/n')
         return project_id[0]
     else:
-        print('- Failed to create the HOL Project')
+        log.write('- Failed to create the HOL Project/n')
 
 
 def create_la_project():
@@ -482,10 +480,10 @@ def create_la_project():
     if response.status_code == 201:
         json_data = response.json()
         project_id = extract_values(json_data, 'id')
-        print('- Successfully created the Lab Automation project')
+        log.write('- Successfully created the Lab Automation project/n')
         return project_id[0]
     else:
-        print('- Failed to create the Lab Automation project')
+        log.write('- Failed to create the Lab Automation project/n')
 
 
 def create_sd_project():
@@ -508,9 +506,9 @@ def create_sd_project():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created the Service Desk Project')
+        log.write('- Successfully created the Service Desk Project/n')
     else:
-        print('- Failed to create the Service Desk Project')
+        log.write('- Failed to create the Service Desk Project/n')
 
 
 def update_project(proj_Ids, vsphere, aws, azure):
@@ -568,12 +566,12 @@ def update_project(proj_Ids, vsphere, aws, azure):
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
 
                 if response.status_code == 200:
-                    print('- Successfully added cloud zones to HOL Project')
+                    log.write('- Successfully added cloud zones to HOL Project/n')
                     return project_id
 
-                print('- Failed to add cloud zones to HOL Project')
-        print('- Failed to add cloud zones to HOL Project - Project not found')
-    print('- Failed to add cloud zones to HOL Project - Project list empty')
+                log.write('- Failed to add cloud zones to HOL Project/n')
+        log.write('- Failed to add cloud zones to HOL Project - Project not found/n')
+    log.write('- Failed to add cloud zones to HOL Project - Project list empty/n')
 
 
 def tag_vsphere_cz(cz_Ids):
@@ -602,13 +600,13 @@ def tag_vsphere_cz(cz_Ids):
                 response = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    print('- Successfully Tagged vSphere Cloud Zone')
+                    log.write('- Successfully Tagged vSphere Cloud Zone/n')
                     return(cloudzone_id)
                 else:
-                    print('- Failed to tag vSphere cloud zone')
+                    log.write('- Failed to tag vSphere cloud zone/n')
                     return None
     else:
-        print('- Failed to tag vSphere cloud zone')
+        log.write('- Failed to tag vSphere cloud zone/n')
         return None
 
 
@@ -631,13 +629,14 @@ def tag_aws_cz(cz_Ids):
                 response = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    print('- Successfully Tagged AWS cloud zone')
+                    log.write('- Successfully Tagged AWS cloud zone/n')
                     return cloudzone_id
                 else:
-                    print('- Failed to tag AWS cloud zone - bad response code')
+                    log.write('- Failed to tag AWS cloud zone - bad response code/n')
                     return None
     else:
-        print('- Failed to tag AWS cloud zone')
+        log.write('- Failed to tag AWS cloud zone'
+)
         return None
 
 
@@ -660,13 +659,13 @@ def tag_azure_cz(cz_Ids):
                 response = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response.status_code == 200:
-                    print('- Successfully tagged Azure cloud zone')
+                    log.write('- Successfully tagged Azure cloud zone/n')
                     return cloudzone_id
                 else:
-                    print('- Failed to tag Azure cloud zone')
+                    log.write('- Failed to tag Azure cloud zone/n')
                     return None
     else:
-        print('- Failed to tag Azure cloud zone')
+        log.write('- Failed to tag Azure cloud zone/n')
         return None
 
 
@@ -687,7 +686,7 @@ def get_azure_regionid():
                     region_id = extract_values(json_data2, 'id')
                     return region_id
     else:
-        print('- Failed to get Azure region ID')
+        log.write('- Failed to get Azure region ID/n')
         return None
 
 
@@ -716,9 +715,9 @@ def create_azure_flavor():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created Azure flavor mapping')
+        log.write('- Successfully created Azure flavor mapping/n')
     else:
-        print('- Failed to create Azure flavor mapping')
+        log.write('- Failed to create Azure flavor mapping/n')
         return None
 
 
@@ -739,7 +738,7 @@ def get_aws_regionid():
                     aws_region_id = extract_values(json_data2, 'id')
                     return aws_region_id
     else:
-        print('- Failed to get AWS region')
+        log.write('- Failed to get AWS region/n')
         return None
 
 
@@ -768,9 +767,9 @@ def create_aws_flavor():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created AWS flavors')
+        log.write('- Successfully created AWS flavors/n')
     else:
-        print('- Failed to created AWS flavors')
+        log.write('- Failed to created AWS flavors/n')
         return None
 
 
@@ -794,9 +793,9 @@ def create_aws_image():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created AWS images')
+        log.write('- Successfully created AWS images/n')
     else:
-        print('- Failed to created AWS images')
+        log.write('- Failed to created AWS images/n')
         return None
 
 
@@ -820,9 +819,9 @@ def create_azure_image():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created Azure images')
+        log.write('- Successfully created Azure images/n')
     else:
-        print('- Failed to created Azure images')
+        log.write('- Failed to created Azure images/n')
         return None
 
 
@@ -855,12 +854,12 @@ def tag_vsphere_clusters(computes):
                 response1 = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response1.status_code == 200:
-                    print("- Tagged", cluster[0], "cluster")
+                    log.write("- Tagged", cluster[0], "cluster")
                 else:
-                    print("- Failed to tag", cluster[0], "cluster")
+                    log.write("- Failed to tag", cluster[0], "cluster")
 
         else:
-            print('Failed to tag vSphere workload clusters')
+            log.write('Failed to tag vSphere workload clusters/n')
     return None
 
 
@@ -889,10 +888,10 @@ def add_github_integration():
         integrationSelfLink = json_data["documentSelfLink"]
         integrationId = re.findall(
             r"([0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12})", integrationSelfLink, re.IGNORECASE)[0]
-        print('- Successfully added GitHub integration endpoint')
+        log.write('- Successfully added GitHub integration endpoint/n')
         return(integrationId)
     else:
-        print('- Failed to add GitHub integration endpoint')
+        log.write('- Failed to add GitHub integration endpoint/n')
 
 
 def configure_github(projId, gitId):
@@ -914,9 +913,9 @@ def configure_github(projId, gitId):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully added blueprint repo to project')
+        log.write('- Successfully added blueprint repo to project/n')
     else:
-        print('- Failed to add the blueprint repo to project')
+        log.write('- Failed to add the blueprint repo to project/n')
 
 
 def get_fabric_network_ids():
@@ -955,14 +954,14 @@ def update_networks(net_ids):
                 response1 = requests.patch(
                     api_url, headers=headers1, data=json.dumps(data), verify=False)
                 if response1.status_code == 200:
-                    print("- Updated the", network[0], "network")
+                    log.write("- Updated the", network[0], "network")
                     return(x)
                 else:
-                    print("- Failed to update", network[0], "network")
+                    log.write("- Failed to update", network[0], "network")
                     return None
 
         else:
-            print('Failed to get vSphere networks')
+            log.write('Failed to get vSphere networks/n')
     return None
 
 
@@ -979,9 +978,9 @@ def create_ip_pool():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created the IP pool')
+        log.write('- Successfully created the IP pool/n')
     else:
-        print('- Failed to create the IP pool')
+        log.write('- Failed to create the IP pool/n')
     return None
 
 
@@ -998,7 +997,7 @@ def get_vsphere_region_id():
                 vsphere_id = (content[x]["id"])
                 return vsphere_id
     else:
-        print('- Failed to get the vSphere region (datacenter) ID')
+        log.write('- Failed to get the vSphere region (datacenter) ID/n')
         return None
 
 
@@ -1019,9 +1018,9 @@ def create_net_profile():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created the network profile')
+        log.write('- Successfully created the network profile/n')
     else:
-        print('- Failed to create the network profile')
+        log.write('- Failed to create the network profile/n')
         return None
 
 
@@ -1038,7 +1037,7 @@ def get_vsphere_datastore_id():
                 vsphere_ds = (content[x]["id"])
                 return vsphere_ds
     else:
-        print('- Failed to get the vSphere datastore ID')
+        log.write('- Failed to get the vSphere datastore ID/n')
         return None
 
 
@@ -1063,9 +1062,9 @@ def create_storage_profile():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully created the storage profile')
+        log.write('- Successfully created the storage profile/n')
     else:
-        print('- Failed to create the storage profile')
+        log.write('- Failed to create the storage profile/n')
         return None
 
 
@@ -1082,7 +1081,7 @@ def get_pricing_card():
                 id = (content[x]["id"])
                 return id
     else:
-        print('- Failed to get default pricing card')
+        log.write('- Failed to get default pricing card/n')
         return None
 
 def sync_price():
@@ -1090,9 +1089,9 @@ def sync_price():
     response = requests.request(
         "POST", url, headers=headers1, data=json.dumps({}), verify=False)
     if response.status_code == 202:
-        print('- Successfully synced prices')
+        log.write('- Successfully synced prices/n')
     else:
-        print(f'- Failed to sync prices ({response.status_code})')
+        log.write(f'- Failed to sync prices ({response.status_code})/n')
 
 def modify_pricing_card(cardid):
     # modifies the Default Pricing card
@@ -1105,7 +1104,7 @@ def modify_pricing_card(cardid):
             {
                 "itemName": "vcpu",
                 "metering": {
-                    "baseRate": 1,
+                    "baseRate": 29,
                     "chargePeriod": "MONTHLY",
                     "chargeOnPowerState": "ALWAYS",
                     "chargeBasedOn": "USAGE"
@@ -1114,7 +1113,7 @@ def modify_pricing_card(cardid):
             {
                 "itemName": "memory",
                 "metering": {
-                    "baseRate": 7.35,
+                    "baseRate": 85,
                     "chargePeriod": "MONTHLY",
                     "chargeOnPowerState": "ALWAYS",
                     "chargeBasedOn": "USAGE",
@@ -1124,7 +1123,7 @@ def modify_pricing_card(cardid):
             {
                 "itemName": "storage",
                 "metering": {
-                    "baseRate": 0.1,
+                    "baseRate": 0.14,
                     "chargePeriod": "MONTHLY",
                     "chargeOnPowerState": "ALWAYS",
                     "chargeBasedOn": "USAGE",
@@ -1137,9 +1136,9 @@ def modify_pricing_card(cardid):
     response = requests.put(api_url, headers=headers1,
                             data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        print('- Successfully modified the pricing card')
+        log.write('- Successfully modified the pricing card/n')
     else:
-        print('- Failed to modify the pricing card')
+        log.write('- Failed to modify the pricing card/n')
 
 
 def get_blueprint_id(bpName):
@@ -1154,20 +1153,20 @@ def get_blueprint_id(bpName):
                 bp_id = (content[x]["id"])
                 return bp_id
     else:
-        print('- Failed to get the blueprint ID for', bpName)
+        log.write('- Failed to get the blueprint ID for', bpName)
         return None
 
 
-def release_blueprint(bpid, ver):
+def release_bluelog.write(bpid, ver):
     api_url = '{0}blueprint/api/blueprints/{1}/versions/{2}/actions/release'.format(
         api_url_base, bpid, ver)
     data = {}
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        print('- Successfully released the blueprint')
+        log.write('- Successfully released the blueprint/n')
     else:
-        print('- Failed to releasea the blueprint')
+        log.write('- Failed to releasea the blueprint/n')
 
 
 def add_bp_cat_source(projid):
@@ -1185,10 +1184,10 @@ def add_bp_cat_source(projid):
     if response.status_code == 201:
         json_data = response.json()
         sourceId = json_data["id"]
-        print('- Successfully added blueprints as a catalog source')
+        log.write('- Successfully added blueprints as a catalog source/n')
         return sourceId
     else:
-        print('- Failed to add blueprints as a catalog source')
+        log.write('- Failed to add blueprints as a catalog source/n')
         return None
 
 
@@ -1202,9 +1201,9 @@ def share_bps(source, project):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        print('- Successfully added blueprint catalog entitlement')
+        log.write('- Successfully added blueprint catalog entitlement/n')
     else:
-        print('- Failed to add blueprint catalog entitlement')
+        log.write('- Failed to add blueprint catalog entitlement/n')
         return None
 
 
@@ -1221,7 +1220,7 @@ def get_cat_id(item_name):
                 cat_id = (content[x]["id"])
                 return cat_id
     else:
-        print('- Failed to get the blueprint ID')
+        log.write('- Failed to get the blueprint ID/n')
         return None
 
 
@@ -1238,9 +1237,9 @@ def deploy_cat_item(catId, project):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        print('- Successfully deployed the catalog item')
+        log.write('- Successfully deployed the catalog item/n')
     else:
-        print('- Failed to deploy the catalog item')
+        log.write('- Failed to deploy the catalog item/n')
 
 
 def check_for_assigned(vlpurn):
@@ -1292,7 +1291,7 @@ def getEndpoints(headers):
     url = f"{api_url_base}provisioning/uerp/provisioning/mgmt/endpoints?expand"
     response = requests.request("GET", url, headers=headers, verify=False)
     if response.status_code == 200:
-        print("- Successfully retrieved endpoint list")    
+        log.write("- Successfully retrieved endpoint list")    
         endpointList = {}
         for endpoint_link in response.json()['documentLinks']:
             endpoint = response.json()['documents'][endpoint_link]
@@ -1309,9 +1308,9 @@ def addCustomResource(headers, vro_endpoint, resource_file):
     response = requests.request(
         "POST", url, headers=headers, data=json.dumps(resource_content), verify=False)
     if response.status_code == 200:
-        print("- Successfully added Custom Resource")
+        log.write("- Successfully added Custom Resource")
     else:
-        print(f"- Failed to add Custom Resource ({response.status_code})")
+        log.write(f"- Failed to add Custom Resource ({response.status_code})")
 
 
 def addResourceAction(headers, vro_endpoint, org, resource_file):
@@ -1327,11 +1326,11 @@ def addResourceAction(headers, vro_endpoint, org, resource_file):
         response = requests.request(
             "POST", url, headers=headers, data=json.dumps(resource_content), verify=False)
         if response.status_code == 200:
-            print("- Successfully added Custom Action")
+            log.write("- Successfully added Custom Action")
         else:
-            print(f"- Failed to add Custom Action ({response.status_code})")
+            log.write(f"- Failed to add Custom Action ({response.status_code})")
     else:
-        print(f"- Failed to add Custom Action ({response.status_code})")
+        log.write(f"- Failed to add Custom Action ({response.status_code})")
 
 
 def create_approval_policy(catId, projId):
@@ -1367,9 +1366,9 @@ def create_approval_policy(catId, projId):
     }
     response = requests.post(api_url, headers=headers1, data=json.dumps(data) ,verify=False)
     if response.status_code == 201:
-        print('- Successfully created the approval policy')
+        log.write('- Successfully created the approval policy/n')
     else:
-        print('- Failed to create the approval policy')
+        log.write('- Failed to create the approval policy/n')
 
 
 def import_pipelines(pipeNames):
@@ -1383,9 +1382,9 @@ def import_pipelines(pipeNames):
         payload = file.read()
         response = requests.post(api_url, headers=headers2, data=payload, verify=False)
         if response.status_code == 200:
-            print('- Imported', fname, 'pipeline')
+            log.write('- Imported', fname, 'pipeline/n')
         else:
-            print('- Failed to imort', fname, 'pipeline')
+            log.write('- Failed to imort', fname, 'pipeline/n')
 
 
 def get_pipelines():
@@ -1397,7 +1396,7 @@ def get_pipelines():
         Ids = extract_values(json_data, 'id')
         return Ids
     else:
-        print('- Failed to get pipelines')
+        log.write('- Failed to get pipelines/n')
         return None
 
 
@@ -1409,9 +1408,9 @@ def enable_pipelines(Ids):
         api_url = '{0}codestream/api/pipelines/{1}'.format(api_url_base, Ids[i])
         response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 200:
-            print('- Enabled pipeline')
+            log.write('- Enabled pipeline/n')
         else:
-            print('- Failed to enable pipeline')
+            log.write('- Failed to enable pipeline/n')
 
 def is_configured():
     # checks to see if vRA is already configured
@@ -1425,7 +1424,7 @@ def is_configured():
                 return True
         return False
     else:
-        print('Could not get cloud accounts')
+        log.write('Could not get cloud accounts/n')
 
 
 
@@ -1440,8 +1439,8 @@ headers = {'Content-Type': 'application/json'}
 access_key = get_token("holadmin", "VMware1!")
 
 if access_key == 'not ready':  # we are not even getting an auth token from vRA yet
-    print('\n\n\nvRA is not yet ready in this Hands On Lab pod - no access token yet')
-    print('Wait for the lab status to be *Ready* and then run this script again')
+    log.write('\n\n\nvRA is not yet ready in this Hands On Lab pod - no access token yet/n')
+    log.write('Wait for the lab status to be *Ready* and then run this script again/n')
     sys.exit()
 
 headers1 = {'Content-Type': 'application/json',
@@ -1451,8 +1450,8 @@ headers2 = {'Content-Type': 'application/x-yaml',
 
 # check to see if vRA is already configured and exit if it is
 if is_configured():
-    print('vRA is already configured')
-    print('... exiting')
+    log.write('vRA is already configured/n')
+    log.write('... exiting/n')
     quit()
 
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
@@ -1461,15 +1460,15 @@ hol = True
 if 'No urn' in result:
     # this pod was not deployed by VLP = keys must be defined at top of this file
     hol = False
-    print('\n\nThis pod was not deployed as a Hands On Lab')
+    log.write('\n\nThis pod was not deployed as a Hands On Lab/n')
     try:
         # test to see if public cloud keys are included at start of script
         msg = awsid
     except:
-        print('\n\n* * * *   I M P O R T A N T   * * * * *\n')
-        print('You must provide AWS and Azure key sets at the top of the "2073-configure-public-cloud.py" script')
-        print('Uncomment the keys, replace with your own and run the configuration batch file again')
-        print('The script can be found in the "Lab Files" directory on the desktop')
+        log.write('\n\n* * * *   I M P O R T A N T   * * * * *\n/n')
+        log.write('You must provide AWS and Azure key sets at the top of the "2073-configure-public-cloud.py" script/n')
+        log.write('Uncomment the keys, replace with your own and run the configuration batch file again/n')
+        log.write('The script can be found in the "Lab Files" directory on the desktop/n')
         sys.exit()
 else:
     vlp = result
@@ -1481,17 +1480,17 @@ if hol:
     # find out if this pod already has credentials assigned
     credentials_used = check_for_assigned(vlp)
     if credentials_used:
-        print('\n\n\nThis Hands On Lab pod already has credentials assigned')
-        print('You do not need to run this script again')
+        log.write('\n\n\nThis Hands On Lab pod already has credentials assigned/n')
+        log.write('You do not need to run this script again/n')
         sys.exit()
 
     assigned_pod = get_available_pod()
     if assigned_pod[0] == 'T0':
         # checking to see if any pod credentials are available
-        print(
+        log.write(
             '\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
-        print('There is a limited set of credentials available to share across active labs and they are all in use')
-        print('Please either wait a bit and run this script again or end this lab and try again later')
+        log.write('There is a limited set of credentials available to share across active labs and they are all in use/n')
+        log.write('Please either wait a bit and run this script again or end this lab and try again later/n')
         payload = {
             "text": f"*WARNING - There are no credential sets available for {lab_user}*"}
         send_slack_notification(payload)
@@ -1518,71 +1517,71 @@ if hol:
         payload = {"text": info}
         send_slack_notification(payload)
 
-print('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
+log.write('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n/n')
 
-print('Creating cloud accounts')
+log.write('Creating cloud accounts/n')
 create_aws_ca()
 create_azure_ca()
 
-print('Tagging cloud zones')
+log.write('Tagging cloud zones/n')
 c_zones_ids = get_czids()
 aws_cz = tag_aws_cz(c_zones_ids)
 azure_cz = tag_azure_cz(c_zones_ids)
 vsphere_cz = tag_vsphere_cz(c_zones_ids)
 
-print('Tagging vSphere workload clusters')
+log.write('Tagging vSphere workload clusters/n')
 compute = get_computeids()
 tag_vsphere_clusters(compute)
 
-print('Creating projects')
+log.write('Creating projects/n')
 hol_project = create_project(vsphere_cz, aws_cz, azure_cz)
 la_project = create_la_project()
 create_sd_project()
 
-print('Creating GitHub blueprint repo integration')
+log.write('Creating GitHub blueprint repo integration/n')
 gitId = add_github_integration()
 configure_github(hol_project, gitId)
 
-print('Waiting for git repo to sync')
+log.write('Waiting for git repo to sync/n')
 time.sleep(20)
 
-print('Update the vSphere networking')
+log.write('Update the vSphere networking/n')
 networks = get_fabric_network_ids()
 vm_net_id = update_networks(networks)
 create_ip_pool()
 vsphere_region_id = get_vsphere_region_id()
 create_net_profile()
 
-print('Create storage profiles')
+log.write('Create storage profiles/n')
 datastore = get_vsphere_datastore_id()
 create_storage_profile()
 
-print('Updating flavor profiles')
+log.write('Updating flavor profiles/n')
 create_azure_flavor()
 create_aws_flavor()
 
-print('Updating image profiles')
+log.write('Updating image profiles/n')
 create_azure_image()
 create_aws_image()
 
-print('Configuring pricing')
+log.write('Configuring pricing/n')
 pricing_card_id = get_pricing_card()
 modify_pricing_card(pricing_card_id)
 sync_price()
 
-print('Adding blueprints to the catalog')
+log.write('Adding blueprints to the catalog/n')
 blueprint_id = get_blueprint_id('Ubuntu 18')
-release_blueprint(blueprint_id, 1)
+release_bluelog.write(blueprint_id, 1)
 blueprint_id = get_blueprint_id('AWS Machine')
-release_blueprint(blueprint_id, 1)
+release_bluelog.write(blueprint_id, 1)
 blueprint_id = get_blueprint_id('Azure Machine')
-release_blueprint(blueprint_id, 1)
+release_bluelog.write(blueprint_id, 1)
 blueprint_id = get_blueprint_id('Count-vms')
-release_blueprint(blueprint_id, 1)
+release_bluelog.write(blueprint_id, 1)
 bp_source = add_bp_cat_source(hol_project)
 share_bps(bp_source, hol_project)
 
-print('Adding Custom Resources and Actions')
+log.write('Adding Custom Resources and Actions/n')
 org = getOrg(headers1)
 endpoints = getEndpoints(headers1)
 addCustomResource(headers1, endpoints['vro'],
@@ -1590,11 +1589,11 @@ addCustomResource(headers1, endpoints['vro'],
 addResourceAction(
     headers1, endpoints['vro'], org, './automation/resource-action-vmotion.json')
 
-print('Creating the approval policy')
+log.write('Creating the approval policy/n')
 catalog_item = get_cat_id('Azure Machine')
 create_approval_policy(catalog_item, hol_project)
 
-print('Importing Code Stream pipelines')
+log.write('Importing Code Stream pipelines/n')
 pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration']
 import_pipelines(pipe_names)
 pipeIds = get_pipelines()
@@ -1609,6 +1608,8 @@ headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
 
-print('Deploying vSphere VM')
+log.write('Deploying vSphere VM/n')
 catalog_item = get_cat_id('Ubuntu 18')
 deploy_cat_item(catalog_item, hol_project)
+
+log.close()
