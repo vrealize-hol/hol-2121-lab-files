@@ -40,7 +40,7 @@ azsub = json_data['azure_subscription_id']
 azten = json_data['azure_tenant_id']
 azappid = json_data['azure_application_id']
 azappkey = json_data['azure_application_key']
-subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
+#subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
 
 if local_creds != True:
@@ -49,7 +49,7 @@ if local_creds != True:
     d_id = json_data['d_id']
     d_sec = json_data['d_sec']
     d_reg = json_data['d_reg']
-#    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
+    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
