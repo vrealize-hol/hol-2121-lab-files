@@ -26,7 +26,7 @@ urllib3.disable_warnings()
 # azappid = "put your azure application id here"
 # azappkey = "put your azure application key here"
 # also change the "local_creds" value below to True
-local_creds = True
+local_creds = False
 
 github_key = os.getenv('github_key')
 
@@ -39,6 +39,7 @@ azsub = json_data['azure_subscription_id']
 azten = json_data['azure_tenant_id']
 azappid = json_data['azure_application_id']
 azappkey = json_data['azure_application_key']
+#### Uncomment in final pod
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
 if local_creds != True:
@@ -47,7 +48,7 @@ if local_creds != True:
     d_id = json_data['d_id']
     d_sec = json_data['d_sec']
     d_reg = json_data['d_reg']
-    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
+#    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
@@ -1479,7 +1480,15 @@ if 'No urn' in result:
 else:
     vlp = result
 
-# this pod is running as a Hands On Lab
+
+#######
+# REMOVE FOR LAB IN PRODUCTION
+hol = False
+######
+######
+
+
+# if this pod is running as a Hands On Lab
 if hol:
     lab_user = get_lab_user()  # find out who is assigned to this lab
 
