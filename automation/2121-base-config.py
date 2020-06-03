@@ -1455,10 +1455,10 @@ headers2 = {'Content-Type': 'application/x-yaml',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
 # check to see if vRA is already configured and exit if it is
-#if is_configured():
-#    log('vRA is already configured')
-#    log('... exiting')
-#    sys.exit()
+if is_configured():
+    log('vRA is already configured')
+    log('... exiting')
+    sys.exit()
 
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
 result = get_vlp_urn()
