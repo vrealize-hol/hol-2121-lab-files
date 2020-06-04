@@ -30,7 +30,7 @@ local_creds = False
 
 github_key = os.getenv('github_key')
 
-# Remove from final pod
+# Move under HOL section in final pod
 keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
 json_data = json.loads(keyfile)
 awsid = json_data['aws_access_key']
@@ -39,6 +39,7 @@ azsub = json_data['azure_subscription_id']
 azten = json_data['azure_tenant_id']
 azappid = json_data['azure_application_id']
 azappkey = json_data['azure_application_key']
+slack_api_key = json_data['slack_api_key']
 #### Uncomment in final pod
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
@@ -59,8 +60,6 @@ proxies = {
     "http": "http://192.168.110.1:3128",
     "https": "https://192.168.110.1:3128"
 }
-
-slack_api_key = os.getenv('SLACK_KEY')
 
 def get_vlp_urn():
     # determine current pod's URN (unique ID) using Main Console guestinfo
@@ -947,9 +946,9 @@ def update_networks(net_ids):
                 data = {
                     "isDefault": "true",
                     "domain": "corp.local",
-                    "defaultGateway": "192.168.120.1",
+                    "defaultGateway": "192.168.110.1",
                     "dnsServerAddresses": ["192.168.110.10"],
-                    "cidr": "192.168.120.0/24",
+                    "cidr": "192.168.110.0/24",
                             "dnsSearchDomains": ["corp.local"],
                             "tags": [
                                 {
@@ -979,8 +978,8 @@ def create_ip_pool():
         "fabricNetworkId": vm_net_id,
         "name": "vSphere Static Pool",
                 "description": "For static IP assignment to deployed VMs",
-                "startIPAddress": "192.168.120.2",
-                "endIPAddress": "192.168.120.30"
+                "startIPAddress": "192.168.110.225",
+                "endIPAddress": "192.168.110.254"
     }
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
@@ -1448,7 +1447,8 @@ access_key = get_token("holadmin", "VMware1!")
 if access_key == 'not ready':  # we are not even getting an auth token from vRA yet
     log('\n\n\nvRA is not yet ready in this Hands On Lab pod - no access token yet')
     log('Wait for the lab status to be *Ready* and then run this script again')
-    sys.exit()
+    sys.stdout.write('vRA did not return an access key')
+    sys.exit(1)
 
 headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
@@ -1459,7 +1459,8 @@ headers2 = {'Content-Type': 'application/x-yaml',
 if is_configured():
     log('vRA is already configured')
     log('... exiting')
-    sys.exit()
+    sys.stdout.write('vRA is already configured')
+    sys.exit(1)
 
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
 result = get_vlp_urn()
