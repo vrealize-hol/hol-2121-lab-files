@@ -468,7 +468,7 @@ def create_project(vsphere, aws, azure):
         log('- Failed to create the HOL Project')
 
 
-def create_la_project():
+def create_labauto_project():
     api_url = '{0}iaas/api/projects'.format(api_url_base)
     data = {
         "name": "Lab Automation Project",
@@ -483,9 +483,7 @@ def create_la_project():
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
         json_data = response.json()
-        project_id = extract_values(json_data, 'id')
         log('- Successfully created the Lab Automation project')
-        return project_id[0]
     else:
         log('- Failed to create the Lab Automation project')
 
@@ -515,37 +513,19 @@ def create_sd_project():
         log('- Failed to create the Service Desk Project')
 
 
-def update_project(proj_Ids, vsphere, aws, azure):
-    if proj_Ids is not None:
-        for x in proj_Ids:
-            project_id = get_right_projid(x)
-            if project_id is not None:
-                api_url = '{0}iaas/api/projects/{1}'.format(
-                    api_url_base, project_id)
-                data = {
-                    "name": "HOL Project",
+def create_odyssey_project(vsphere, aws, azure):
+    api_url = '{0}iaas/api/projects'.format(api_url_base)
+    data = {
+        "name": "Odyssey Project",
                     "zoneAssignmentConfigurations": [
                         {
-                            "zoneId": vsphere,
-                            "maxNumberInstances": 20,
-                            "priority": 1,
-                            "cpuLimit": 40,
-                            "memoryLimitMB": 33554
+                        "zoneId": vsphere
                         },
                         {
-                            "zoneId": aws,
-                            "maxNumberInstances": 10,
-                            "priority": 1,
-                            "cpuLimit": 20,
-                            "memoryLimitMB": 41943
-
+                        "zoneId": aws
                         },
                         {
-                            "zoneId": azure,
-                            "maxNumberInstances": 10,
-                            "priority": 1,
-                            "cpuLimit": 20,
-                            "memoryLimitMB": 41943
+                        "zoneId": azure
                         }
                     ],
                     "administrators": [
@@ -561,21 +541,15 @@ def update_project(proj_Ids, vsphere, aws, azure):
                             "email": "holdev"
                         }
                     ],
-                    "sharedResources": "true",
-                    "constraints": {},
-                    "operationTimeout": 0,
-                    "machineNamingTemplate": "${resource.name}-${###}"
+        "sharedResources": "true"
                 }
-                response = requests.patch(
-                    api_url, headers=headers1, data=json.dumps(data), verify=False)
-
-                if response.status_code == 200:
-                    log('- Successfully added cloud zones to HOL Project')
-                    return project_id
-
-                log('- Failed to add cloud zones to HOL Project')
-        log('- Failed to add cloud zones to HOL Project - Project not found')
-    log('- Failed to add cloud zones to HOL Project - Project list empty')
+    response = requests.post(api_url, headers=headers1,
+                             data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        json_data = response.json()
+        log('- Successfully created the Odyssey Project')
+    else:
+        log('- Failed to create the Odyssey Project')
 
 
 def tag_vsphere_cz(cz_Ids):
@@ -1503,7 +1477,7 @@ if hol:
 
     assigned_pod = get_available_pod()
     if assigned_pod[0] == 'T0':
-        # checking to see if any pod credentials are available
+        # no pod credentials are available
         log(
             '\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
         log('There is a limited set of credentials available to share across active labs and they are all in use')
@@ -1552,8 +1526,9 @@ tag_vsphere_clusters(compute)
 
 log('Creating projects')
 hol_project = create_project(vsphere_cz, aws_cz, azure_cz)
-la_project = create_la_project()
+create_labauto_project()
 create_sd_project()
+create_odyssey_project(vsphere_cz, aws_cz, azure_cz)
 
 log('Creating GitHub blueprint repo integration')
 gitId = add_github_integration()
