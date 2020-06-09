@@ -1457,13 +1457,6 @@ else:
     vlp = result
 
 
-#######
-# REMOVE FOR LAB IN PRODUCTION
-hol = False
-######
-######
-
-
 # if this pod is running as a Hands On Lab
 if hol:
     lab_user = get_lab_user()  # find out who is assigned to this lab
@@ -1478,8 +1471,7 @@ if hol:
     assigned_pod = get_available_pod()
     if assigned_pod[0] == 'T0':
         # no pod credentials are available
-        log(
-            '\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
+        log('\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
         log('There is a limited set of credentials available to share across active labs and they are all in use')
         log('Please either wait a bit and run this script again or end this lab and try again later')
         payload = {
