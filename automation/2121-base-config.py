@@ -29,18 +29,18 @@ urllib3.disable_warnings()
 local_creds = False
 
 github_key = os.getenv('github_key')
+slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 
-# Move under HOL section in final pod
-keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
-json_data = json.loads(keyfile)
-awsid = json_data['aws_access_key']
-awssec = json_data['aws_secret_key']
-azsub = json_data['azure_subscription_id']
-azten = json_data['azure_tenant_id']
-azappid = json_data['azure_application_id']
-azappkey = json_data['azure_application_key']
-slack_api_key = json_data['slack_api_key']
-#### Uncomment in final pod
+# T50 keys - remove from final pod
+#keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
+#json_data = json.loads(keyfile)
+#awsid = json_data['aws_access_key']
+#awssec = json_data['aws_secret_key']
+#azsub = json_data['azure_subscription_id']
+#azten = json_data['azure_tenant_id']
+#azappid = json_data['azure_application_id']
+#azappkey = json_data['azure_application_key']
+#slack_api_key = json_data['slack_api_key']
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
 if local_creds != True:
@@ -49,6 +49,7 @@ if local_creds != True:
     d_id = json_data['d_id']
     d_sec = json_data['d_sec']
     d_reg = json_data['d_reg']
+#### REMOVE FROM FINAL POD
 #    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
 
 vra_fqdn = "vr-automation.corp.local"
@@ -119,7 +120,6 @@ def get_available_pod():
     seed(dt)
     rand_int = randint(0, available_pods-1)
     pod = pod_array[rand_int]
-
     return(pod, num_not_reserved, available_pods)
 
 
