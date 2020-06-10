@@ -1450,7 +1450,6 @@ if hol:
         sys.exit()
 
     assigned_pod = get_available_pod()
-    log(f'Assigned pod: {assigned_pod}')
 
     if assigned_pod[0] == 'T0':
         # no pod credentials are available
@@ -1469,7 +1468,6 @@ if hol:
         available_count = assigned_pod[2]
         keys = get_creds(assigned_pod[0], vlp)
         log(f'cred set: {cred_set}')
-        log(f'keys: {keys}')
         awsid = keys['aws_access_key']
         awssec = keys['aws_secret_key']
         azsub = keys['azure_subscription_id']
@@ -1484,7 +1482,7 @@ if hol:
         payload = {"text": info}
         send_slack_notification(payload)
 
-log('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
+log('\nPublic cloud credentials found. Configuring vRealize Automation\n')
 
 log('Creating cloud accounts')
 create_aws_ca()
