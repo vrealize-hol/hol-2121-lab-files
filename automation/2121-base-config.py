@@ -1247,7 +1247,7 @@ def get_lab_user():
     assigned_account = 'URN not found in the current labs database'
     dynamodb = boto3.resource(
         'dynamodb', aws_access_key_id=d_id, aws_secret_access_key=d_sec, region_name=d_reg)
-    table = dynamodb.Table('HOL-2073-current-labs')
+    table = dynamodb.Table('HOL-current-labs')
     response = table.scan(
         FilterExpression=Attr('vapp_urn').eq(vlp),
         ProjectionExpression="account"
@@ -1256,7 +1256,6 @@ def get_lab_user():
     for i in accounts:
         # get the account name (email address)
         assigned_account = i['account']
-
     return(assigned_account)
 
 
@@ -1449,7 +1448,7 @@ if 'No urn' in result:
         msg = awsid
     except:
         log('\n\n* * * *   I M P O R T A N T   * * * * *\n')
-        log('You must provide AWS and Azure key sets at the top of the "2073-configure-public-cloud.py" script')
+        log('You must provide AWS and Azure key sets at the top of the "2121-base-config.py" script')
         log('Uncomment the keys, replace with your own and run the configuration batch file again')
         log('The script can be found in the "Lab Files" directory on the desktop')
         sys.exit()
@@ -1459,7 +1458,9 @@ else:
 
 # if this pod is running as a Hands On Lab
 if hol:
+    log('Pod is running in VLP')
     lab_user = get_lab_user()  # find out who is assigned to this lab
+    log(f'Current user assigned to the URN: {lab_user}')
 
     # find out if this pod already has credentials assigned
     credentials_used = check_for_assigned(vlp)
@@ -1469,6 +1470,8 @@ if hol:
         sys.exit()
 
     assigned_pod = get_available_pod()
+    log(f'Assigned pod: {assigned_pod}')
+
     if assigned_pod[0] == 'T0':
         # no pod credentials are available
         log('\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
@@ -1485,7 +1488,8 @@ if hol:
         unreserved_count = assigned_pod[1]
         available_count = assigned_pod[2]
         keys = get_creds(assigned_pod[0], vlp)
-
+        log(f'cred set: {cred_set}'
+        log(f'keys: {keys}')
         awsid = keys['aws_access_key']
         awssec = keys['aws_secret_key']
         azsub = keys['azure_subscription_id']
