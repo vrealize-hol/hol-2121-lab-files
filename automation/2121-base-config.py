@@ -32,14 +32,14 @@ github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 
 # T50 keys - remove from final pod
-#keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
-#json_data = json.loads(keyfile)
-#awsid = json_data['aws_access_key']
-#awssec = json_data['aws_secret_key']
-#azsub = json_data['azure_subscription_id']
-#azten = json_data['azure_tenant_id']
-#azappid = json_data['azure_application_id']
-#azappkey = json_data['azure_application_key']
+keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
+json_data = json.loads(keyfile)
+awsid = json_data['aws_access_key']
+awssec = json_data['aws_secret_key']
+azsub = json_data['azure_subscription_id']
+azten = json_data['azure_tenant_id']
+azappid = json_data['azure_application_id']
+azappkey = json_data['azure_application_key']
 #slack_api_key = json_data['slack_api_key']
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
@@ -1437,6 +1437,12 @@ if 'No urn' in result:
         sys.exit()
 else:
     vlp = result
+
+
+######################
+hol = False
+####################
+
 
 # if this pod is running as a Hands On Lab
 if hol:
