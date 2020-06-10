@@ -1,0 +1,105 @@
+exports.handler = (context, inputs, callback) => {
+    console.log('Inputs were ' + JSON.stringify(inputs));
+    callback(undefined, {status: "done"});
+}
+
+const https = require('https');
+
+//Tag Name and Description
+var tagName = "MyCustomTag";
+var tagDescription = "This is a tag description.";
+
+//Please note that the following 3 lines are not secure to run in a production environment
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+var username = 'administrator@corp.local';
+var password = 'VMware1!';
+//For production: implement a service account, credentials should be stored in secure strings, and certificates should be imported
+
+//Setup our session
+console.log('Start our session.');
+
+//This is intentionally left empty
+const sessionStartData = JSON.stringify({});
+
+//These are the options and headers for the first session
+const startSessionOptions = {
+	hostname: 'vcsa-01a.corp.local',
+	port: 443,
+	path: '/rest/com/vmware/cis/session',
+	method: 'POST',
+	headers: {
+		'Content-Type': 'application/json',
+		'Content-Length': sessionStartData.length,
+		'Authorization': 'Basic ' + new Buffer.from(username + ':' + password).toString('base64')
+		}
+};
+
+//This sets up the request with the options we've outlined above and writes output to the log
+const req = https.request(startSessionOptions, res => {
+	let data = '';
+	console.log(`Session Start Status Code: ${res.statusCode}`);
+	res.on('data', d => {
+	    data += d;
+	});
+	res.on('end', () => {
+		console.log("Body: " + data);
+		sessionId = JSON.parse(data).value;
+        return createTag(sessionId);
+        console.log("Session ID in the loop is: " + sessionId);
+	});
+});
+
+//This handles any errors we might encounter
+req.on('error', error => {
+	console.error(error);
+});
+
+//These lines actually call the request
+req.write(sessionStartData);
+req.end();
+
+//callback function
+function createTag(sessionId){
+    console.log("Session ID in callback: " + sessionId);
+
+	//Setup the creation of the tag
+	console.log('Create the tag');
+	const tagData = JSON.stringify({
+		"create_spec": {
+			"category_id": "urn:vmomi:InventoryServiceCategory:c3410ead-fef9-40c4-a1aa-f06966862265:GLOBAL",
+			"description": tagDescription,
+			"name": tagName
+		}
+	});
+
+	//These are the options and headers for the first session
+	const tagOptions = {
+		hostname: 'vcsa-01a.corp.local',
+		port: 443,
+		path: '/rest/com/vmware/cis/tagging/tag',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Content-Length': tagData.length,
+			'Authorization': 'Basic ' + new Buffer.from(username + ':' + password).toString('base64'),
+			'vmware-api-session-id': sessionId
+		}
+	};
+
+	//This sets up the request with the options we've outlined above and writes output to the log
+	const tagReq = https.request(tagOptions, res => {
+		console.log(`Tag Creation Status Code: ${res.statusCode}`)
+		res.on('data', d => {
+		process.stdout.write(d)
+		})
+	});
+
+	//This handles any errors we might encounter
+	tagReq.on('error', error => {
+		console.error(error)
+	});
+
+	//These lines actually call the request
+	tagReq.write(tagData);
+	tagReq.end(); 
+};
