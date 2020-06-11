@@ -13,7 +13,7 @@ _inputMeta:
     mandatory: true
 workspace:
   endpoint: Docker Host in VMC
-  image: vmwarecmbu/cas-builder
+  image: hol/cas-builder
   path: ''
   limits:
     cpu: 2.0
@@ -49,12 +49,12 @@ stages:
         input:
           script: |-
             cd fielddemo-chat-app/frontend-tier
-            export IMAGE=vmwarecmbu/fielddemo-app-frontend:${input.username}
-            docker login --username=vmwarecmbu --password=VMware1!
+            export IMAGE=hol/fielddemo-app-frontend:${input.username}
+            docker login --username=hol --password=VMware1!
             docker build -t $IMAGE --file ./Dockerfile .
             docker push $IMAGE
           username: demouser
-          password: vRealiz3!
+          password: VMware1!
           passphrase: ''
           privatekey: ''
           host: ${Build.Create-Docker-Builder.output.deploymentDetails.resources.Cloud_Machine_1.address}
@@ -83,12 +83,12 @@ stages:
         input:
           script: |-
             cd fielddemo-chat-app/app-tier
-            export IMAGE=vmwarecmbu/fielddemo-app-app:${input.username}
-            docker login --username=vmwarecmbu --password=VMware1!
+            export IMAGE=hol/fielddemo-app-app:${input.username}
+            docker login --username=hol --password=VMware1!
             docker build -t $IMAGE --file ./Dockerfile .
             docker push $IMAGE
           username: demouser
-          password: vRealiz3!
+          password: VMware1!
           passphrase: ''
           privatekey: ''
           host: ${Build.Create-Docker-Builder.output.deploymentDetails.resources.Cloud_Machine_1.address}
@@ -101,14 +101,14 @@ stages:
         type: SSH
         input:
           script: |-
-            git clone https://gitlab.com/mcclanc/fielddemo-chat-app.git
+            git clone https://gitlab.com/some_repo
             cd fielddemo-chat-app/db-tier
-            export IMAGE=vmwarecmbu/fielddemo-app-db:${input.username}
-            docker login --username=vmwarecmbu --password=VMware1!
+            export IMAGE=hol/fielddemo-app-db:${input.username}
+            docker login --username=hol --password=VMware1!
             docker build -t $IMAGE --file ./Dockerfile .
             docker push $IMAGE
           username: demouser
-          password: vRealiz3!
+          password: VMware1!
           passphrase: ''
           privatekey: ''
           host: ${Build.Create-Docker-Builder.output.deploymentDetails.resources.Cloud_Machine_1.address}
@@ -206,7 +206,7 @@ stages:
             \ labels:\r\n    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\
             \n      role: web\r\n      tier: frontend\r\n  replicas: 2\r\n  template:\r\n    metadata:\r\
             \n      labels:\r\n        app: bootcamp\r\n        role: web\r\n        tier: frontend\r\n\
-            \    spec:\r\n      containers:\r\n      - name: frontend\r\n        image: vmwarecmbu/fielddemo-app-frontend:latest\
+            \    spec:\r\n      containers:\r\n      - name: frontend\r\n        image: hol/fielddemo-app-frontend:latest\
             \  # or just image: redis\r\n        ports:\r\n        - containerPort: 80"
       Expose-Frontend:
         type: K8S
@@ -239,7 +239,7 @@ stages:
             \    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\n\
             \      role: api\r\n      tier: backend\r\n  replicas: 1\r\n  template:\r\n    metadata:\r\
             \n      labels:\r\n        app: bootcamp\r\n        role: api\r\n        tier: backend\r\n\
-            \    spec:\r\n      containers:\r\n      - name: pyapi\r\n        image: vmwarecmbu/fielddemo-app-app:latest\
+            \    spec:\r\n      containers:\r\n      - name: pyapi\r\n        image: hol/fielddemo-app-app:latest\
             \  # or just image: redis\r\n        ports:\r\n        - containerPort: 80"
       Deploy-DB:
         type: K8S
@@ -257,7 +257,7 @@ stages:
             \ app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\n   \
             \   role: db\r\n      tier: backend\r\n  replicas: 1\r\n  template:\r\n    metadata:\r\n \
             \     labels:\r\n        app: bootcamp\r\n        role: db\r\n        tier: backend\r\n  \
-            \  spec:\r\n      containers:\r\n      - name: db\r\n        image: vmwarecmbu/fielddemo-app-db:latest\r\
+            \  spec:\r\n      containers:\r\n      - name: db\r\n        image: hol/fielddemo-app-db:latest\r\
             \n        ports:\r\n        - containerPort: 5432"
       Create-Namespace:
         type: K8S
