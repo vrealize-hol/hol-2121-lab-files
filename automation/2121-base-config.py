@@ -1560,7 +1560,7 @@ catalog_item = get_cat_id('Azure Machine')
 create_approval_policy(catalog_item, hol_project)
 
 log('Importing Code Stream pipelines')
-pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration']
+pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration', 'CS-Chat-App']
 import_pipelines(pipe_names)
 pipeIds = get_pipelines()
 enable_pipelines(pipeIds)

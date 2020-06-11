@@ -1,0 +1,290 @@
+---
+project: HOL Project
+kind: PIPELINE
+name: HOL-Demo-Chat-App
+icon: organization,left, is-error is-solid
+enabled: true
+concurrency: 10
+input:
+  username: ''
+_inputMeta:
+  username:
+    description: Enter Username (No Spaces)
+    mandatory: true
+workspace:
+  endpoint: Docker Host in VMC
+  image: vmwarecmbu/cas-builder
+  path: ''
+  limits:
+    cpu: 2.0
+    memory: 1024
+stageOrder:
+- Build
+- Deploy-to-K8s
+- Test-and-Approve
+- Cleanup-Demo
+stages:
+  Build:
+    taskOrder:
+    - Create-Docker-Builder
+    - Sleep
+    - Build-DB
+    - Build-App
+    - Build-Frontend
+    - Delete-Docker-Builder
+    tasks:
+      Sleep:
+        type: CI
+        input:
+          steps:
+          - sleep 60
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+      Build-Frontend:
+        type: SSH
+        input:
+          script: |-
+            cd fielddemo-chat-app/frontend-tier
+            export IMAGE=vmwarecmbu/fielddemo-app-frontend:${input.username}
+            docker login --username=vmwarecmbu --password=VMware1!
+            docker build -t $IMAGE --file ./Dockerfile .
+            docker push $IMAGE
+          username: demouser
+          password: vRealiz3!
+          passphrase: ''
+          privatekey: ''
+          host: ${Build.Create-Docker-Builder.output.deploymentDetails.resources.Cloud_Machine_1.address}
+          workingDirectory: ''
+          arguments: [
+            ]
+          environmentVariables: {
+            }
+      Create-Docker-Builder:
+        type: Blueprint
+        input:
+          action: CreateDeployment
+          blueprint: Docker-Builder-Do-Not-Modify
+          deploymentName: Docker-${input.username}
+          parameters: {
+            }
+          version: '1'
+          filepath: ''
+      Delete-Docker-Builder:
+        type: Blueprint
+        input:
+          action: DeleteDeployment
+          deploymentName: Docker-${input.username}
+      Build-App:
+        type: SSH
+        input:
+          script: |-
+            cd fielddemo-chat-app/app-tier
+            export IMAGE=vmwarecmbu/fielddemo-app-app:${input.username}
+            docker login --username=vmwarecmbu --password=VMware1!
+            docker build -t $IMAGE --file ./Dockerfile .
+            docker push $IMAGE
+          username: demouser
+          password: vRealiz3!
+          passphrase: ''
+          privatekey: ''
+          host: ${Build.Create-Docker-Builder.output.deploymentDetails.resources.Cloud_Machine_1.address}
+          workingDirectory: ''
+          arguments: [
+            ]
+          environmentVariables: {
+            }
+      Build-DB:
+        type: SSH
+        input:
+          script: |-
+            git clone https://gitlab.com/mcclanc/fielddemo-chat-app.git
+            cd fielddemo-chat-app/db-tier
+            export IMAGE=vmwarecmbu/fielddemo-app-db:${input.username}
+            docker login --username=vmwarecmbu --password=VMware1!
+            docker build -t $IMAGE --file ./Dockerfile .
+            docker push $IMAGE
+          username: demouser
+          password: vRealiz3!
+          passphrase: ''
+          privatekey: ''
+          host: ${Build.Create-Docker-Builder.output.deploymentDetails.resources.Cloud_Machine_1.address}
+          workingDirectory: ''
+          arguments: [
+            ]
+          environmentVariables: {
+            }
+  Cleanup-Demo:
+    taskOrder:
+    - Delete-Namespace
+    tasks:
+      Delete-Namespace:
+        type: K8S
+        ignoreFailure: true
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: DELETE
+          timeout: '5'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: |-
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: ${input.username}-namespace
+  Deploy-to-K8s:
+    taskOrder:
+    - Delete-Namespace-If-Exists
+    - Create-Namespace
+    - Deploy-DB,Deploy-App
+    - Expose-DB,Expose-App
+    - Deploy-Frontend
+    - Expose-Frontend
+    tasks:
+      Expose-App:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  name: pyapi\r\n  namespace: ${input.username}-namespace\r\
+            \n  labels:\r\n    app: bootcamp\r\n    role: api\r\n    tier: backend\r\nspec:\r\n  ports:\r\
+            \n  - port: 80\r\n  selector:\r\n    app: bootcamp\r\n    role: api\r\n    tier: backend"
+      Delete-Namespace-If-Exists:
+        type: K8S
+        ignoreFailure: true
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: DELETE
+          timeout: '5'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: |-
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: ${input.username}-namespace
+      Expose-DB:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  name: db\r\n  namespace: ${input.username}-namespace\r\
+            \n  labels:\r\n    app: bootcamp\r\n    role: db\r\n    tier: backend\r\nspec:\r\n  ports:\r\
+            \n  - port: 5432\r\n  selector:\r\n    app: bootcamp\r\n    role: db\r\n    tier: backend"
+      Deploy-Frontend:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2\r\nkind: Deployment\r\
+            \nmetadata:\r\n  name: chat-app-frontend\r\n  namespace: ${input.username}-namespace\r\n \
+            \ labels:\r\n    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\
+            \n      role: web\r\n      tier: frontend\r\n  replicas: 2\r\n  template:\r\n    metadata:\r\
+            \n      labels:\r\n        app: bootcamp\r\n        role: web\r\n        tier: frontend\r\n\
+            \    spec:\r\n      containers:\r\n      - name: frontend\r\n        image: vmwarecmbu/fielddemo-app-frontend:latest\
+            \  # or just image: redis\r\n        ports:\r\n        - containerPort: 80"
+      Expose-Frontend:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  labels:\r\n    app: bootcamp\r\n  \
+            \  role: web\r\n    tier: frontend\r\n  name: ${input.username}\r\n  namespace: ${input.username}-namespace\r\
+            \nspec:\r\n  ports:\r\n  - port: 80\r\n    protocol: TCP\r\n    targetPort: 80\r\n  selector:\r\
+            \n    app: bootcamp\r\n    role: web\r\n    tier: frontend\r\n  type: LoadBalancer"
+      Deploy-App:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2\r\nkind: Deployment\r\
+            \nmetadata:\r\n  name: pyapi\r\n  namespace: ${input.username}-namespace\r\n  labels:\r\n\
+            \    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\n\
+            \      role: api\r\n      tier: backend\r\n  replicas: 1\r\n  template:\r\n    metadata:\r\
+            \n      labels:\r\n        app: bootcamp\r\n        role: api\r\n        tier: backend\r\n\
+            \    spec:\r\n      containers:\r\n      - name: pyapi\r\n        image: vmwarecmbu/fielddemo-app-app:latest\
+            \  # or just image: redis\r\n        ports:\r\n        - containerPort: 80"
+      Deploy-DB:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2\r\nkind: Deployment\r\
+            \nmetadata:\r\n  name: db\r\n  namespace: ${input.username}-namespace\r\n  labels:\r\n   \
+            \ app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\n   \
+            \   role: db\r\n      tier: backend\r\n  replicas: 1\r\n  template:\r\n    metadata:\r\n \
+            \     labels:\r\n        app: bootcamp\r\n        role: db\r\n        tier: backend\r\n  \
+            \  spec:\r\n      containers:\r\n      - name: db\r\n        image: vmwarecmbu/fielddemo-app-db:latest\r\
+            \n        ports:\r\n        - containerPort: 5432"
+      Create-Namespace:
+        type: K8S
+        endpoints:
+          kubernetesServer: Ent PKS Prod
+        input:
+          action: CREATE
+          timeout: '5'
+          continueOnConflict: 'false'
+          filepath: ''
+          scmConstants: {
+            }
+          yaml: "apiVersion: v1\r\nkind: Namespace\r\nmetadata:\r\n  name: ${input.username}-namespace"
+  Test-and-Approve:
+    taskOrder:
+    - Approve
+    tasks:
+      Approve:
+        type: UserOperation
+        input:
+          approvers:
+          - ${requestBy}
+          approverGroups: [
+            ]
+          summary: Please test the appliaction.
+          description: Access the application through the ingress IP found in the out put of the Expose
+            Frontend task.
+          sendemail: 'false'
+          expirationInDays: '3'
+          pipelineName: ${name}
