@@ -31,16 +31,16 @@ local_creds = False
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 
+#############################################################################################################################################
 # T50 keys - remove from final pod
-keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
-json_data = json.loads(keyfile)
-awsid = json_data['aws_access_key']
-awssec = json_data['aws_secret_key']
-azsub = json_data['azure_subscription_id']
-azten = json_data['azure_tenant_id']
-azappid = json_data['azure_application_id']
-azappkey = json_data['azure_application_key']
-#slack_api_key = json_data['slack_api_key']
+#keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
+#json_data = json.loads(keyfile)
+#awsid = json_data['aws_access_key']
+#awssec = json_data['aws_secret_key']
+#azsub = json_data['azure_subscription_id']
+#azten = json_data['azure_tenant_id']
+#azappid = json_data['azure_application_id']
+#azappkey = json_data['azure_application_key']
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
 if local_creds != True:
@@ -1421,7 +1421,7 @@ if is_configured():
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
 result = get_vlp_urn()
 log('VLP URN = ' + result)
-hol = True
+hol = True  # assume it is - the next step will change it if not
 if 'No urn' in result:
     # this pod was not deployed by VLP = keys must be defined at top of this file
     hol = False
@@ -1437,12 +1437,6 @@ if 'No urn' in result:
         sys.exit()
 else:
     vlp = result
-
-
-######################
-hol = False
-####################
-
 
 # if this pod is running as a Hands On Lab
 if hol:
