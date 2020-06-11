@@ -1,0 +1,25 @@
+formatVersion: 1
+name: NSX-T On-Demand Networking
+version: 1
+inputs: {}
+resources:
+  Cloud_vSphere_Machine_1:
+    type: Cloud.vSphere.Machine
+    metadata:
+      layoutPosition:
+        - 0
+        - 0
+    properties:
+      image: Ubuntu18
+      cpuCount: 1
+      totalMemoryMB: 1024
+      networks:
+        - network: '${resource.Cloud_NSX_Network_1.id}'
+  Cloud_NSX_Network_1:
+    type: Cloud.NSX.Network
+    metadata:
+      layoutPosition:
+        - 1
+        - 0
+    properties:
+      networkType: routed
