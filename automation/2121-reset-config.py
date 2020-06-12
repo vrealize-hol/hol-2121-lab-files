@@ -94,6 +94,23 @@ def get_holproj():
         return None
 
 
+def get_odyproj():
+    # returns the id of the HOL Project
+    api_url = '{0}iaas/api/projects'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'Odyssey Project' in content[x]["name"]:       ## Looking to match the Odyssey Project name
+                proj_id = (content[x]["id"])
+                return proj_id
+    else:
+        log('- Failed to get the Odyssey project ID')
+        return None
+
+
 def unconfigure_project(proj_Id):
     api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,proj_Id)
     data =  {
@@ -159,9 +176,9 @@ def delete_project(proj_Id):
     data =  {}
     response = requests.delete(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 204:
-        log('- Successfully deleted the HOL Project')
+        log('- Successfully deleted the Project')
     else:
-        log('- Failed to delte the HOL Project')
+        log('- Failed to delte the Project')
 
 
 def get_vsphere_ca():
@@ -241,6 +258,10 @@ unconfigure_github()
 blueprint_ids = get_blueprints()
 delete_blueprints(blueprint_ids)
 delete_project(hol_project)
+
+log('Deleting the Odyssey Project')
+ody_project = get_odyproj()
+delete_project(ody_project)
 
 log('Deleting the private cloud account')
 ca = get_vsphere_ca()
