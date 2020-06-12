@@ -83,7 +83,7 @@ def delete_custom_resources(resources):
     # deletes the list of custom resources passed in as an array of ids
     count = len(resources)
     for i in range(count):
-        resId = actions[i]
+        resId = resources[i]
         api_url = '{0}form-service/api/custom/resource-types/{1}'.format(api_url_base, resId)
         response = requests.delete(api_url, headers=headers1, verify=False)
         if response.status_code == 200:
