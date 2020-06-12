@@ -111,7 +111,7 @@ def get_odyproj():
         return None
 
 
-def unconfigure_project(proj_Id):
+def unconfigure_hol_project(proj_Id):
     api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,proj_Id)
     data =  {
         "name": "HOL Project",
@@ -122,6 +122,20 @@ def unconfigure_project(proj_Id):
         log('- Successfully removed cloud zones from HOL Project')
     else:
         log('- Failed to remove cloud zones from HOL Project')
+
+
+def unconfigure_ody_project(proj_Id):
+    api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,proj_Id)
+    data =  {
+        "name": "Odyssey Project",
+        "zoneAssignmentConfigurations": []
+    }
+    response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        log('- Successfully removed cloud zones from Odyssey Project')
+    else:
+        log('- Failed to remove cloud zones from Odyssey Project')
+
 
 def unconfigure_github():
     # removes GitHub
@@ -178,7 +192,7 @@ def delete_project(proj_Id):
     if response.status_code == 204:
         log('- Successfully deleted the Project')
     else:
-        log('- Failed to delte the Project')
+        log('- Failed to delete the Project')
 
 
 def get_vsphere_ca():
@@ -253,15 +267,15 @@ while deployment_count > 0:
 
 log('Deleting the HOL Project')
 hol_project = get_holproj()
-unconfigure_project(hol_project)
+unconfigure_hol_project(hol_project)
 unconfigure_github()
 blueprint_ids = get_blueprints()
 delete_blueprints(blueprint_ids)
 delete_project(hol_project)
 
-log('Deleting the Odyssey Project')
+log('Removing cloud zones from the Odyssey Project')
 ody_project = get_odyproj()
-delete_project(ody_project)
+unconfigure_ody_project(ody_project)
 
 log('Deleting the private cloud account')
 ca = get_vsphere_ca()
