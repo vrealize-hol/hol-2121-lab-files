@@ -31,6 +31,7 @@ local_creds = False
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 
+#############################################################################################################################################
 # T50 keys - remove from final pod
 #keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
 #json_data = json.loads(keyfile)
@@ -40,7 +41,6 @@ slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 #azten = json_data['azure_tenant_id']
 #azappid = json_data['azure_application_id']
 #azappkey = json_data['azure_application_key']
-#slack_api_key = json_data['slack_api_key']
 #subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
 
 if local_creds != True:
@@ -1242,24 +1242,6 @@ def check_for_assigned(vlpurn):
     return(urn_assigned)
 
 
-def get_lab_user():
-    # find out the email address of the user assigned to this HOL VLP entitlement
-    assigned_account = 'URN not found in the current labs database'
-    dynamodb = boto3.resource(
-        'dynamodb', aws_access_key_id=d_id, aws_secret_access_key=d_sec, region_name=d_reg)
-    table = dynamodb.Table('HOL-2073-current-labs')
-    response = table.scan(
-        FilterExpression=Attr('vapp_urn').eq(vlp),
-        ProjectionExpression="account"
-    )
-    accounts = response['Items']
-    for i in accounts:
-        # get the account name (email address)
-        assigned_account = i['account']
-
-    return(assigned_account)
-
-
 def getOrg(headers):
     url = f"{api_url_base}csp/gateway/am/api/loggedin/user/orgs"
     response = requests.request(
@@ -1439,7 +1421,7 @@ if is_configured():
 # check to see if this vPod was deployed by VLP (is it an active Hands on Lab?)
 result = get_vlp_urn()
 log('VLP URN = ' + result)
-hol = True
+hol = True  # assume it is - the next step will change it if not
 if 'No urn' in result:
     # this pod was not deployed by VLP = keys must be defined at top of this file
     hol = False
@@ -1449,24 +1431,16 @@ if 'No urn' in result:
         msg = awsid
     except:
         log('\n\n* * * *   I M P O R T A N T   * * * * *\n')
-        log('You must provide AWS and Azure key sets at the top of the "2073-configure-public-cloud.py" script')
+        log('You must provide AWS and Azure key sets at the top of the "2121-base-config.py" script')
         log('Uncomment the keys, replace with your own and run the configuration batch file again')
         log('The script can be found in the "Lab Files" directory on the desktop')
         sys.exit()
 else:
     vlp = result
 
-
-#######
-# REMOVE FOR LAB IN PRODUCTION
-hol = False
-######
-######
-
-
 # if this pod is running as a Hands On Lab
 if hol:
-    lab_user = get_lab_user()  # find out who is assigned to this lab
+    log('Pod is running in VLP')
 
     # find out if this pod already has credentials assigned
     credentials_used = check_for_assigned(vlp)
@@ -1476,10 +1450,10 @@ if hol:
         sys.exit()
 
     assigned_pod = get_available_pod()
+
     if assigned_pod[0] == 'T0':
         # no pod credentials are available
-        log(
-            '\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
+        log('\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
         log('There is a limited set of credentials available to share across active labs and they are all in use')
         log('Please either wait a bit and run this script again or end this lab and try again later')
         payload = {
@@ -1493,7 +1467,7 @@ if hol:
         unreserved_count = assigned_pod[1]
         available_count = assigned_pod[2]
         keys = get_creds(assigned_pod[0], vlp)
-
+        log(f'cred set: {cred_set}')
         awsid = keys['aws_access_key']
         awssec = keys['aws_secret_key']
         azsub = keys['azure_subscription_id']
@@ -1503,12 +1477,12 @@ if hol:
 
         # build and send Slack notification
         info = ""
-        info += (f'*Credential set {cred_set} assigned to {lab_user}* \n')
+        info += (f'*Credential set {cred_set} was assigned to the {vlp} VLP urn* \n')
         info += (f'- There are {(available_count-1)} sets remaining out of {unreserved_count} available \n')
         payload = {"text": info}
         send_slack_notification(payload)
 
-log('\n\nPublic cloud credentials found. Configuring vRealize Automation\n\n')
+log('\nPublic cloud credentials found. Configuring vRealize Automation\n')
 
 log('Creating cloud accounts')
 create_aws_ca()
@@ -1586,7 +1560,7 @@ catalog_item = get_cat_id('Azure Machine')
 create_approval_policy(catalog_item, hol_project)
 
 log('Importing Code Stream pipelines')
-pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration']
+pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration', 'CS-Chat-App']
 import_pipelines(pipe_names)
 pipeIds = get_pipelines()
 enable_pipelines(pipeIds)

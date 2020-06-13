@@ -25,6 +25,10 @@ def get_token(user_name,pass_word):
     else:
         return('not ready')
 
+def log(msg):
+    file = open("C:\\hol\\vraDeleteCustom.log", "a")
+    file.write(msg + '\n')
+    file.close()
 
 def get_custom_resource_actions():
     # returns an array containing all of the custom resource action ids
@@ -40,7 +44,7 @@ def get_custom_resource_actions():
             arr.append(Id)
         return arr
     else:
-        print('- Failed get custom resrouce actions')
+        log('- Failed get custom resrouce actions')
         return None
 
 
@@ -52,9 +56,9 @@ def delete_custom_resource_actions(actions):
         api_url = '{0}form-service/api/custom/resource-actions/{1}'.format(api_url_base, actionId)
         response = requests.delete(api_url, headers=headers1, verify=False)
         if response.status_code == 200:
-            print('- Successfully deleted the custom resrouce action')
+            log(f'- Successfully deleted the custom resrouce action: {actionId}')
         else:
-            print('- Failed to delete the custom resource action')
+            log(f'- Failed to delete the custom resource action: {actionId}')
 
 
 def get_custom_resources():
@@ -71,21 +75,21 @@ def get_custom_resources():
             arr.append(Id)
         return arr
     else:
-        print('- Failed get custom resrouces')
+        log('- Failed get custom resrouces')
         return None
 
 
-def delete_custom_resources(actions):
+def delete_custom_resources(resources):
     # deletes the list of custom resources passed in as an array of ids
-    count = len(actions)
+    count = len(resources)
     for i in range(count):
-        actionId = actions[i]
-        api_url = '{0}form-service/api/custom/resource-types/{1}'.format(api_url_base, actionId)
+        resId = resources[i]
+        api_url = '{0}form-service/api/custom/resource-types/{1}'.format(api_url_base, resId)
         response = requests.delete(api_url, headers=headers1, verify=False)
         if response.status_code == 200:
-            print('- Successfully deleted the custom resrouces')
+            log(f'- Successfully deleted the custom resrouce: {resId}')
         else:
-            print('- Failed to delete the custom resource')
+            log(f'- Failed to delete the custom resource: {resId}')
 
 
 
@@ -97,11 +101,11 @@ headers1 = {'Content-Type': 'application/json',
            'Authorization': 'Bearer {0}'.format(access_key)}
 
 
-print('Deleting custom resrouce actions')
+log('Deleting custom resrouce actions')
 customIds = get_custom_resource_actions()
 delete_custom_resource_actions(customIds)
 
-print('Deleting custom resources')
+log('Deleting custom resources')
 resourceIds = get_custom_resources()
 delete_custom_resources(resourceIds)
 

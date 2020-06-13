@@ -1,0 +1,61 @@
+import json
+import urllib
+import ssl
+import base64
+
+def handler(context, inputs):
+   jsonOut=json.dumps(inputs, separators=(',', ':'))
+   print("Inputs were {0}".format(jsonOut))
+
+   outputs = {
+     "status": "done"
+   }
+
+   return outputs
+
+#Ignore SSL Warnings
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+
+#Encode the username and password in the header
+user = 'administrator@corp.local'
+passwd = 'VMware1!'
+base64string = base64.b64encode(bytes('%s:%s' % ('administrator@corp.local', 'VMware1!'),'ascii'))
+#For production: implement a service account, credentials should be stored in secure strings, and certificates should be imported
+
+#Submit session ID request
+url = 'https://vcsa-01a.corp.local/rest/com/vmware/cis/session'
+req = urllib.request.Request(url, method='POST')
+req.add_header("Authorization", "Basic %s" % base64string.decode('utf-8'))
+response = urllib.request.urlopen(req, context=ctx)
+
+#Get the session ID from the JSON
+data = json.load(response)   
+sessionId = data['value']
+print("Session ID: ", sessionId)
+
+#Get back an ID for the tag
+url = 'https://vcsa-01a.corp.local/rest/com/vmware/cis/tagging/tag'
+req = urllib.request.Request(url, method='GET')
+req.add_header("Authorization", "Basic %s" % base64string.decode('utf-8'))
+req.add_header("vmware-api-session-id",sessionId)
+response = urllib.request.urlopen(req, context=ctx)
+
+#Get the tag ID
+data = json.load(response)
+tagId = data['value'][0]
+print("Tag ID: ", tagId)
+
+#Delete the Tag
+url = 'https://vcsa-01a.corp.local/rest/com/vmware/cis/tagging/tag/id:' + tagId
+req = urllib.request.Request(url, method='DELETE')
+req.add_header("Authorization", "Basic %s" % base64string.decode('utf-8'))
+req.add_header("vmware-api-session-id",sessionId)
+response = urllib.request.urlopen(req, context=ctx)
+
+#Confirm the Tag was Deleted
+print("The tag was deleted")
+
+
+
