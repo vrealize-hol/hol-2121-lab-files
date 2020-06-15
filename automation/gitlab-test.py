@@ -13,12 +13,28 @@ def get_gitlab_projects():
     response = requests.get(api_url, headers=gitlab_header, verify=False)
     if response.status_code == 200:
         json_data = response.json()
-        Ids = extract_values(json_data, 'id')
-        return Ids
+        for project in json_data:
+            if 'dev' in project['name']:        # looking for the 'dev' project
+                return project['id']
+        else:
+            print('- Did not find the dev gitlab project')
     else:
         print('- Failed to get pipelines')
-        return None
 
-git_proj_ids = get_gitlab_projects()
-print git_proj_ids
+
+def update_git_proj(projId):
+    # sets the visibility of the passed project ID to public
+    api_url = '{0}projects/{1}{2}'.format(gitlab_api_url_base, projId, gitlab_token_suffix)
+    data = {
+        "visibility": "public"
+    }
+    response = requests.put(api_url, headers=gitlab_header, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        print('- Updated the gitlab project')
+    else:
+        print('- Failed to update the gitlab project')
+
+
+git_proj_id = get_gitlab_projects()
+update_git_proj(git_proj_id)
 
