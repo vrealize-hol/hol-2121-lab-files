@@ -31,30 +31,21 @@ local_creds = False
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 
-#############################################################################################################################################
-# T50 keys - remove from final pod
-#keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/dev-cloud-keys.json')
-#json_data = json.loads(keyfile)
-#awsid = json_data['aws_access_key']
-#awssec = json_data['aws_secret_key']
-#azsub = json_data['azure_subscription_id']
-#azten = json_data['azure_tenant_id']
-#azappid = json_data['azure_application_id']
-#azappkey = json_data['azure_application_key']
-#subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/dev-cloud-keys.json')
-
 if local_creds != True:
     keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
     json_data = json.loads(keyfile)
     d_id = json_data['d_id']
     d_sec = json_data['d_sec']
     d_reg = json_data['d_reg']
-#### REMOVE FROM FINAL POD
-#    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
+    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
 apiVersion = "2019-01-15"
+
+gitlab_api_url_base = "http://gitlab.corp.local/api/v4/"
+gitlab_token_suffix = "?private_token=H-WqAJP6whn6KCP2zGSz"
+gitlab_header = {'Content-Type': 'application/json'}
 
 # set internet proxy for for communication out of the vPod
 proxies = {
@@ -1389,6 +1380,32 @@ def is_configured():
         log('Could not get cloud accounts')
 
 
+def get_gitlab_projects():
+    # returns an array containing all of the project ids
+    api_url = '{0}projects{1}'.format(gitlab_api_url_base, gitlab_token_suffix)
+    response = requests.get(api_url, headers=gitlab_header, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        for project in json_data:
+            if 'dev' in project['name']:        # looking for the 'dev' project
+                return project['id']
+        else:
+            log('- Did not find the dev gitlab project')
+    else:
+        log('- Failed to get pipelines')
+
+
+def update_git_proj(projId):
+    # sets the visibility of the passed project ID to public
+    api_url = '{0}projects/{1}{2}'.format(gitlab_api_url_base, projId, gitlab_token_suffix)
+    data = {
+        "visibility": "public"
+    }
+    response = requests.put(api_url, headers=gitlab_header, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        log('- Updated the gitlab project')
+    else:
+        log('- Failed to update the gitlab project')
 
 
 ##### MAIN #####
@@ -1568,12 +1585,17 @@ enable_pipelines(pipeIds)
 ##########################################
 # API calls below as holuser
 ##########################################
-
 access_key = get_token("holuser", "VMware1!")
 headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
-
 log('Deploying vSphere VM')
 catalog_item = get_cat_id('Ubuntu 18')
 deploy_cat_item(catalog_item, hol_project)
+
+##########################################
+# Configure GitLab Project
+##########################################
+log('Configuring GitLab')
+git_proj_id = get_gitlab_projects()
+update_git_proj(git_proj_id)
