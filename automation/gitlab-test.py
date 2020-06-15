@@ -18,3 +18,6 @@ def get_gitlab_projects():
         print('- Failed to get pipelines')
         return None
 
+git_proj_ids = get_gitlab_projects()
+print git_proj_ids
+
