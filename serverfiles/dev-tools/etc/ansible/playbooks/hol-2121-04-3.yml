@@ -25,7 +25,7 @@
       mode: '0755'
 
   - name: Deploy website css
-    command: mv /tmp/clr-ui.min.css /var/www/html/css/clr-ui.min.css
+    command: mv /root/clr-ui.min.css /var/www/html/css/clr-ui.min.css
   
   - name: Change file ownership, group and permissions
     file:
@@ -34,7 +34,7 @@
       mode: 0755
 
   - name: Deploy website imp
-    command: mv /tmp/vra-ansible.png /var/www/html/img/vra-ansible.png
+    command: mv /root/vra-ansible.png /var/www/html/img/vra-ansible.png
 
   - name: Change file ownership, group and permissions
     file:

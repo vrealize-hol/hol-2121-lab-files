@@ -25,6 +25,10 @@ def get_token(user_name,pass_word):
     else:
         return('not ready')
 
+def log(msg):
+    file = open("C:\\hol\\vraReset.log", "a")
+    file.write(msg + '\n')
+    file.close()
 
 def extract_values(obj, key):
     """Pull all values of specified key from nested JSON."""
@@ -55,7 +59,7 @@ def get_deployments():
         deployments = extract_values(json_data,'id')
         return deployments
     else:
-        print('- Failed to find any deployments')
+        log('- No deployments left')
         return None
 
 
@@ -68,9 +72,9 @@ def delete_deployments(deployments):
         api_url = '{0}deployment/api/deployments/{1}'.format(api_url_base, deplID)
         response = requests.delete(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 200:
-            print('- Successfully deleted the deployment')
+            log('- Successfully deleted the deployment')
         else:
-            print('- Failed to delete the deployment')
+            log('- Failed to delete the deployment')
 
 
 def get_holproj():
@@ -86,11 +90,28 @@ def get_holproj():
                 proj_id = (content[x]["id"])
                 return proj_id
     else:
-        print('- Failed to get the HOL project ID')
+        log('- Failed to get the HOL project ID')
         return None
 
 
-def unconfigure_project(proj_Id):
+def get_odyproj():
+    # returns the id of the HOL Project
+    api_url = '{0}iaas/api/projects'.format(api_url_base)
+    response = requests.get(api_url, headers=headers1, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        content = json_data["content"]
+        count = json_data["totalElements"]
+        for x in range(count):
+            if 'Odyssey Project' in content[x]["name"]:       ## Looking to match the Odyssey Project name
+                proj_id = (content[x]["id"])
+                return proj_id
+    else:
+        log('- Failed to get the Odyssey project ID')
+        return None
+
+
+def unconfigure_hol_project(proj_Id):
     api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,proj_Id)
     data =  {
         "name": "HOL Project",
@@ -98,9 +119,23 @@ def unconfigure_project(proj_Id):
     }
     response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 200:
-        print('- Successfully removed cloud zones from HOL Project')
+        log('- Successfully removed cloud zones from HOL Project')
     else:
-        print('- Failed to remove cloud zones from HOL Project')
+        log('- Failed to remove cloud zones from HOL Project')
+
+
+def unconfigure_ody_project(proj_Id):
+    api_url = '{0}iaas/api/projects/{1}'.format(api_url_base,proj_Id)
+    data =  {
+        "name": "Odyssey Project",
+        "zoneAssignmentConfigurations": []
+    }
+    response = requests.patch(api_url, headers=headers1, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        log('- Successfully removed cloud zones from Odyssey Project')
+    else:
+        log('- Failed to remove cloud zones from Odyssey Project')
+
 
 def unconfigure_github():
     # removes GitHub
@@ -115,14 +150,14 @@ def unconfigure_github():
             if 'GitHub CS' in content[x]["name"]:       ## Looking to match the GitHub source
                 github_id = (content[x]["id"])
     if github_id == 'none':
-        print('- no GitHub integration was found')
+        log('- no GitHub integration was found')
     else:
         api_url = '{0}content/api/sources/{1}'.format(api_url_base, github_id)
         response = requests.delete(api_url, headers=headers1, verify=False)
         if response.status_code == 204:
-            print('- Successfully deleted the GitHub integration')
+            log('- Successfully deleted the GitHub integration')
         else:
-            print('- Failed to delete the GitHub integration')
+            log('- Failed to delete the GitHub integration')
 
     
 def get_blueprints():
@@ -133,7 +168,7 @@ def get_blueprints():
         bpIds = extract_values(json_data,'id')
         return bpIds
     else:
-        print('- Failed to get the blueprint IDs')
+        log('- Failed to get the blueprint IDs')
         return None
 
 def delete_blueprints(bps):
@@ -145,9 +180,9 @@ def delete_blueprints(bps):
         api_url = '{0}blueprint/api/blueprints/{1}'.format(api_url_base, bpId)
         response = requests.delete(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 204:
-            print('- Successfully deleted the blueprint')
+            log('- Successfully deleted the blueprint')
         else:
-            print('- Failed to delete the blueprint')
+            log('- Failed to delete the blueprint')
 
 
 def delete_project(proj_Id):
@@ -155,9 +190,9 @@ def delete_project(proj_Id):
     data =  {}
     response = requests.delete(api_url, headers=headers1, data=json.dumps(data), verify=False)
     if response.status_code == 204:
-        print('- Successfully deleted the HOL Project')
+        log('- Successfully deleted the Project')
     else:
-        print('- Failed to delte the HOL Project')
+        log('- Failed to delete the Project')
 
 
 def get_vsphere_ca():
@@ -168,7 +203,7 @@ def get_vsphere_ca():
         Ids = extract_values(json_data,'id')
         return Ids
     else:
-        print('- Failed to get any vSphere cloud accounts')
+        log('- Failed to get any vSphere cloud accounts')
         return None
 
 
@@ -181,9 +216,9 @@ def delete_ca(cas):
         api_url = '{0}iaas/api/cloud-accounts-vsphere/{1}'.format(api_url_base, caId)
         response = requests.delete(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 204:
-            print('- Successfully deleted the cloud account')
+            log('- Successfully deleted the cloud account')
         else:
-            print('- Failed to delete the cloud account')
+            log('- Failed to delete the cloud account')
 
 
 def get_czones():
@@ -194,7 +229,7 @@ def get_czones():
         Ids = extract_values(json_data,'id')
         return Ids
     else:
-        print('- Failed to get any cloud zones')
+        log('- Failed to get any cloud zones')
         return None
 
 
@@ -207,9 +242,9 @@ def delete_zones(zones):
         api_url = '{0}iaas/api/zones/{1}'.format(api_url_base, Id)
         response = requests.delete(api_url, headers=headers1, data=json.dumps(data), verify=False)
         if response.status_code == 204:
-            print('- Successfully deleted the cloud zone')
+            log('- Successfully deleted the cloud zone')
         else:
-            print('- Failed to delete the cloud zone')
+            log('- Failed to delete the cloud zone')
 
 
 ##### MAIN #####
@@ -220,28 +255,33 @@ headers1 = {'Content-Type': 'application/json',
            'Authorization': 'Bearer {0}'.format(access_key)}
 
 
-print('Deleting deployments - this might take a minute')
+log('Deleting deployments - this might take a minute')
 deploymentIds = get_deployments()
 deployment_count = len(deploymentIds)
 delete_deployments(deploymentIds)
 while deployment_count > 0:
+    log('- waiting for deployments to be deleted')
     time.sleep(5)
     deploymentIds = get_deployments()
     deployment_count = len(deploymentIds)
 
-print('Deleting the HOL Project')
+log('Deleting the HOL Project')
 hol_project = get_holproj()
-unconfigure_project(hol_project)
+unconfigure_hol_project(hol_project)
 unconfigure_github()
 blueprint_ids = get_blueprints()
 delete_blueprints(blueprint_ids)
 delete_project(hol_project)
 
-print('Deleting the private cloud account')
+log('Removing cloud zones from the Odyssey Project')
+ody_project = get_odyproj()
+unconfigure_ody_project(ody_project)
+
+log('Deleting the private cloud account')
 ca = get_vsphere_ca()
 delete_ca(ca)
 
-print('Deleting pubic cloud zones')
+log('Deleting pubic cloud zones')
 zones = get_czones()
 delete_zones(zones)
 
