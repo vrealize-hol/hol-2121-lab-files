@@ -1324,6 +1324,27 @@ def create_approval_policy(catId, projId):
         log('- Failed to create the approval policy')
 
 
+def create_cs_endpoint(projId):
+    # creates a dummy code stream endpoint
+    api_url = '{0}codestream/api/endpoints'.format(api_url_base)
+    data = {
+        "name": "Ent PKS Prod"
+        "description": "dummy endpoint",
+        "isRestreicted": "",
+        "project": projId,
+        "type": "k8s",
+        "properties": {
+            "kubernetesURL": "http://1.2.3.4",
+            "authType": "basicAuth",
+            "userName": "holuser",
+            "password": "VMware1!"
+        }
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data) ,verify=False)
+    if response.status_code == 200:
+        print('success')
+
+
 def import_pipelines(pipeNames):
     # imports code stream pipelines contained in the array of names
     api_url = '{0}codestream/api/import'.format(api_url_base)
@@ -1427,6 +1448,8 @@ headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 headers2 = {'Content-Type': 'application/x-yaml',
             'Authorization': 'Bearer {0}'.format(access_key)}
+
+"""
 
 # check to see if vRA is already configured and exit if it is
 if is_configured():
@@ -1599,3 +1622,7 @@ deploy_cat_item(catalog_item, hol_project)
 log('Configuring GitLab')
 git_proj_id = get_gitlab_projects()
 update_git_proj(git_proj_id)
+
+"""
+project_id = ''
+create_cs_endpoint(project_id)
