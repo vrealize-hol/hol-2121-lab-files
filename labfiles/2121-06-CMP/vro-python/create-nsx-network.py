@@ -11,8 +11,6 @@ from com.vmware.nsx_policy.model_client import Segment
 from com.vmware.nsx_policy.model_client import SegmentSubnet
 
 # Create NSX client for a given endpoint (nsx_endpoint, nsx_policy_client)
-
-
 def nsx_create_client(nsx_user='admin',
                       nsx_password='VMware1!VMware1!',
                       nsx_endpoint=nsx_policy_client,
@@ -34,8 +32,6 @@ def nsx_create_client(nsx_user='admin',
     return ApiClient(stub_factory)
 
 # Create NSX Segment
-
-
 def nsx_create_segment(nsx_client, segment_name, gateway_cidr, transport_zone_id='/infra/sites/default/enforcement-points/default/transport-zones/3a04c35c-5116-473e-af92-bc8dc7fab309', router_id='/infra/tier-0s/hol-gw'):
     subnet = SegmentSubnet(gateway_address=gateway_cidr)
     segment = Segment(transport_zone_path=transport_zone_id,
@@ -45,14 +41,17 @@ def nsx_create_segment(nsx_client, segment_name, gateway_cidr, transport_zone_id
     nsx_client.infra.Segments.update(segment_name, segment)
 
 
-def main(context=None, inputs=None):
+def main(context=None, inputs={}):
+    print('Connecting to NSX Manager...')
     client = nsx_create_client(
-        inputs['user'], inputs['password'], nsx_policy_client, inputs['host'])
-    
+        inputs.get('user'), inputs.get('password'), nsx_policy_client, inputs.get('host'))
+
     if 'name' in inputs and 'gateway' in inputs:
+        print(f"Creating Network segment {inputs['name']} - {inputs['gateway']}")
         nsx_create_segment(client, inputs['name'], inputs['gateway'])
     else:
-        raise Exception('No value for Segment name or Gateway. Segment not created')
+        raise Exception(
+            'No value for Segment name or Gateway. Segment not created')
 
 
 if __name__ == "__main__":
