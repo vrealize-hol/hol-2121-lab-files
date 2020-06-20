@@ -43,8 +43,7 @@ def nsx_create_segment(nsx_client, segment_name, gateway_cidr, transport_zone_id
 
 def main(context=None, inputs={}):
     print('Connecting to NSX Manager...')
-    client = nsx_create_client(
-        inputs.get('user'), inputs.get('password'), nsx_policy_client, inputs.get('host'))
+    client = nsx_create_client()
 
     if 'name' in inputs and 'gateway' in inputs:
         print(f"Creating Network segment {inputs['name']} - {inputs['gateway']}")
