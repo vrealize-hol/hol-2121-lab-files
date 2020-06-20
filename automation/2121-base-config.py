@@ -1324,6 +1324,29 @@ def create_approval_policy(catId, projId):
         log('- Failed to create the approval policy')
 
 
+def create_cs_endpoint():
+    # creates a dummy code stream endpoint for the chat app pipeline example
+    api_url = '{0}codestream/api/endpoints'.format(api_url_base)
+    data = {
+        "name": "Ent PKS Prod",
+        "description": "Dummy endpoint for chat app pipeline",
+        "isRestreicted": "",
+        "project": "HOL Project",
+        "type": "k8s",
+        "properties": {
+            "kubernetesURL": "http://1.2.3.4",
+            "authType": "basicAuth",
+            "userName": "holuser",
+            "password": "VMware1!"
+        }
+    }
+    response = requests.post(api_url, headers=headers1, data=json.dumps(data) ,verify=False)
+    if response.status_code == 200:
+        log('- Successfully created the code stream endpoint')
+    else:
+        log('- Failed to create the code stream endpoint')
+
+
 def import_pipelines(pipeNames):
     # imports code stream pipelines contained in the array of names
     api_url = '{0}codestream/api/import'.format(api_url_base)
@@ -1577,6 +1600,7 @@ catalog_item = get_cat_id('Azure Machine')
 create_approval_policy(catalog_item, hol_project)
 
 log('Importing Code Stream pipelines')
+create_cs_endpoint()
 pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration', 'CS-Chat-App']
 import_pipelines(pipe_names)
 pipeIds = get_pipelines()
