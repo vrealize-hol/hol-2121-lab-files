@@ -30,7 +30,7 @@ local_creds = False
 
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
-
+"""
 if local_creds != True:
     keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
     json_data = json.loads(keyfile)
@@ -38,7 +38,7 @@ if local_creds != True:
     d_sec = json_data['d_sec']
     d_reg = json_data['d_reg']
     subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
-
+"""
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
 apiVersion = "2019-01-15"
@@ -1324,14 +1324,14 @@ def create_approval_policy(catId, projId):
         log('- Failed to create the approval policy')
 
 
-def create_cs_endpoint(projId):
+def create_cs_endpoint():
     # creates a dummy code stream endpoint
     api_url = '{0}codestream/api/endpoints'.format(api_url_base)
     data = {
-        "name": "Ent PKS Prod"
+        "name": "Ent PKS Prod",
         "description": "dummy endpoint",
         "isRestreicted": "",
-        "project": projId,
+        "project": "HOL Project",
         "type": "k8s",
         "properties": {
             "kubernetesURL": "http://1.2.3.4",
@@ -1624,5 +1624,4 @@ git_proj_id = get_gitlab_projects()
 update_git_proj(git_proj_id)
 
 """
-project_id = ''
-create_cs_endpoint(project_id)
+create_cs_endpoint
