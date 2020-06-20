@@ -1342,7 +1342,9 @@ def create_cs_endpoint():
     }
     response = requests.post(api_url, headers=headers1, data=json.dumps(data) ,verify=False)
     if response.status_code == 200:
-        print('success')
+        log('- Successfully created the code stream endpoint')
+    else:
+        log('- Failed to create the code stream endpoint')
 
 
 def import_pipelines(pipeNames):
@@ -1624,4 +1626,4 @@ git_proj_id = get_gitlab_projects()
 update_git_proj(git_proj_id)
 
 """
-create_cs_endpoint
+create_cs_endpoint()
