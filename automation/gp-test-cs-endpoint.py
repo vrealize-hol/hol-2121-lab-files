@@ -30,7 +30,7 @@ local_creds = False
 
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
-
+"""
 if local_creds != True:
     keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
     json_data = json.loads(keyfile)
@@ -38,7 +38,7 @@ if local_creds != True:
     d_sec = json_data['d_sec']
     d_reg = json_data['d_reg']
     subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
-
+"""
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
 apiVersion = "2019-01-15"
@@ -1325,11 +1325,11 @@ def create_approval_policy(catId, projId):
 
 
 def create_cs_endpoint():
-    # creates a dummy code stream endpoint for the chat app pipeline example
+    # creates a dummy code stream endpoint
     api_url = '{0}codestream/api/endpoints'.format(api_url_base)
     data = {
         "name": "Ent PKS Prod",
-        "description": "Dummy endpoint for chat app pipeline",
+        "description": "dummy endpoint",
         "isRestreicted": "",
         "project": "HOL Project",
         "type": "k8s",
@@ -1450,6 +1450,8 @@ headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 headers2 = {'Content-Type': 'application/x-yaml',
             'Authorization': 'Bearer {0}'.format(access_key)}
+
+"""
 
 # check to see if vRA is already configured and exit if it is
 if is_configured():
@@ -1600,7 +1602,6 @@ catalog_item = get_cat_id('Azure Machine')
 create_approval_policy(catalog_item, hol_project)
 
 log('Importing Code Stream pipelines')
-create_cs_endpoint()
 pipe_names = ['CS-Reset-Resources', 'CS-Base-Configuration', 'CS-Chat-App']
 import_pipelines(pipe_names)
 pipeIds = get_pipelines()
@@ -1623,3 +1624,6 @@ deploy_cat_item(catalog_item, hol_project)
 log('Configuring GitLab')
 git_proj_id = get_gitlab_projects()
 update_git_proj(git_proj_id)
+
+"""
+create_cs_endpoint()
