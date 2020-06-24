@@ -25,19 +25,12 @@ urllib3.disable_warnings()
 # azten = "put your azure tenant id here"
 # azappid = "put your azure application id here"
 # azappkey = "put your azure application key here"
+
 # also change the "local_creds" value below to True
 local_creds = False
 
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
-
-if local_creds != True:
-    keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
-    json_data = json.loads(keyfile)
-    d_id = json_data['d_id']
-    d_sec = json_data['d_sec']
-    d_reg = json_data['d_reg']
-    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
 
 vra_fqdn = "vr-automation.corp.local"
 api_url_base = "https://" + vra_fqdn + "/"
@@ -1471,8 +1464,8 @@ if 'No urn' in result:
         msg = awsid
     except:
         log('\n\n* * * *   I M P O R T A N T   * * * * *\n')
-        log('You must provide AWS and Azure key sets at the top of the "2121-base-config.py" script')
-        log('Uncomment the keys, replace with your own and run the configuration batch file again')
+        log('You must provide AWS and Azure key sets at the top of the "C:\\hol-2121-lab-files\\automation\\2121-base-config.py" script')
+        log('Uncomment the keys, replace with your own and run the configuration script again')
         log('The script can be found in the "Lab Files" directory on the desktop')
         sys.exit()
 else:
