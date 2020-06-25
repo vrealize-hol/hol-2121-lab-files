@@ -93,10 +93,8 @@ def get_available_pod():
         ProjectionExpression="pod, in_use"
     )
     pods = response['Items']
-
     # the number of pods not reserved
     num_not_reserved = len(pods)
-
     available_pods = 0  # set counter to zero
     pod_array = []
     for i in pods:
@@ -104,14 +102,25 @@ def get_available_pod():
             available_pods += 1  # increment counter
             pod_array.append(i['pod'])
 
-    if available_pods == 0:  # no pod credentials are available
-        return("T0", num_not_reserved, available_pods)
-
-    # get random pod from those available
-    dt = datetime.datetime.microsecond
-    seed(dt)
-    rand_int = randint(0, available_pods-1)
-    pod = pod_array[rand_int]
+    if available_pods == 0:  # all credentials are assigned
+        # get the oldest credentials and re-use those
+        response = table.scan(
+            FilterExpression=Attr('check_out_epoch').gt(0),
+            ProjectionExpression="pod, check_out_epoch"
+        )
+        pods = response['Items']
+        oldest = pods[0]['check_out_epoch']
+        pod = pods[0]['pod']
+        for i in pods:
+            if i['check_out_epoch'] < oldest:
+                pod = i['pod']
+                oldest = i['check_out_epoch']
+    else:
+        # get random pod from those available
+        dt = datetime.datetime.microsecond
+        seed(dt)
+        rand_int = randint(0, available_pods-1)
+        pod = pod_array[rand_int]
     return(pod, num_not_reserved, available_pods)
 
 
