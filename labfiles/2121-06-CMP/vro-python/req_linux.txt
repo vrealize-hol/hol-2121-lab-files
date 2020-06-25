@@ -1,8 +1,0 @@
-nsx_python_sdk
-nsx_policy_python_sdk
-nsx_global_policy_python_sdk
-requests
-
-# Force to download for Linux & Python 3.7
-https://files.pythonhosted.org/packages/58/95/f1282ca55649b60afcf617e1e2ca384a2a3e7a5cf91f724cf83c8fbe76a1/cryptography-2.9.2-cp35-abi3-manylinux1_x86_64.whl
-https://files.pythonhosted.org/packages/ff/1d/0b743dadcdf4980b717163fd2d24cd18c1c0c7a78a076268afd7e0e2c25e/cffi-1.14.0-cp37-cp37m-manylinux1_x86_64.whl
