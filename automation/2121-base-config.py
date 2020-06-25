@@ -29,6 +29,14 @@ urllib3.disable_warnings()
 # also change the "local_creds" value below to True
 local_creds = False
 
+if local_creds != True:
+    keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
+    json_data = json.loads(keyfile)
+    d_id = json_data['d_id']
+    d_sec = json_data['d_sec']
+    d_reg = json_data['d_reg']
+    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
+
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
 
