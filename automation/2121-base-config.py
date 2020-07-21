@@ -29,13 +29,7 @@ urllib3.disable_warnings()
 # also change the "local_creds" value below to True
 local_creds = False
 
-if local_creds != True:
-    keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
-    json_data = json.loads(keyfile)
-    d_id = json_data['d_id']
-    d_sec = json_data['d_sec']
-    d_reg = json_data['d_reg']
-    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
+debug = True
 
 github_key = os.getenv('github_key')
 slack_api_key = 'T024JFTN4/B0150SYEHFE/zNcnyZqWvUcEtaqyiRlLj86O'
@@ -160,6 +154,8 @@ def get_creds(cred_set, vlp_urn_id):
     return(results)
 
 def log(msg):
+    if debug = True:
+        sys.stdout.write(msg)
     file = open("C:\\hol\\vraConfig.log", "a")
     file.write(msg + '\n')
     file.close()
@@ -1445,6 +1441,22 @@ def update_git_proj(projId):
 # find out if vRA is ready. if not ready we need to exit or the configuration will fail
 headers = {'Content-Type': 'application/json'}
 
+if local_creds != True:
+    log('Getting ddb creds from router')
+    try:
+        keyfile = subprocess.check_output('plink -ssh router -l holuser -pw VMware1! cat mainconsole/ddb.json')
+    except:
+        log('Unable to get ddb creds from router')
+        log('... exiting')
+        sys.exit()
+    log('Got ddb creds from router')
+    json_data = json.loads(keyfile)
+    d_id = json_data['d_id']
+    d_sec = json_data['d_sec']
+    d_reg = json_data['d_reg']
+    subprocess.call('plink -ssh router -l holuser -pw VMware1! rm mainconsole/ddb.json')
+    log('Removed ddb creds from router')
+
 ###########################################
 # API calls below as holadmin
 ###########################################
@@ -1483,7 +1495,6 @@ if 'No urn' in result:
         log('\n\n* * * *   I M P O R T A N T   * * * * *\n')
         log('You must provide AWS and Azure key sets at the top of the "C:\\hol-2121-lab-files\\automation\\2121-base-config.py" script')
         log('Uncomment the keys, replace with your own and run the configuration script again')
-        log('The script can be found in the "Lab Files" directory on the desktop')
         sys.exit()
 else:
     vlp = result
