@@ -154,7 +154,7 @@ def get_creds(cred_set, vlp_urn_id):
     return(results)
 
 def log(msg):
-    if debug = True:
+    if debug:
         sys.stdout.write(msg)
     file = open("C:\\hol\\vraConfig.log", "a")
     file.write(msg + '\n')
