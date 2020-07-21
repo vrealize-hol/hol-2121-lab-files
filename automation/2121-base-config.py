@@ -1363,7 +1363,7 @@ def import_pipelines(pipeNames):
     count = len(pipeNames)
     for i in range(count):
         fname = pipeNames[i]
-        fileName = './automation/' + fname + '.yaml'
+        fileName = 'C:/hol-2121-lab-files/automation/' + fname + '.yaml'
         file = open(fileName, 'r')
         payload = file.read()
         response = requests.post(api_url, headers=headers2, data=payload, verify=False)
@@ -1601,9 +1601,9 @@ log('Adding Custom Resources and Actions')
 org = getOrg(headers1)
 endpoints = getEndpoints(headers1)
 addCustomResource(headers1, endpoints['vro'],
-                  './automation/resource-ad-user.json')
+                  'C:/hol-2121-lab-files/automation/resource-ad-user.json')
 addResourceAction(
-    headers1, endpoints['vro'], org, './automation/resource-action-vmotion.json')
+    headers1, endpoints['vro'], org, 'C:/hol-2121-lab-files/automation/resource-action-vmotion.json')
 
 log('Creating the approval policy')
 catalog_item = get_cat_id('Azure Machine')
