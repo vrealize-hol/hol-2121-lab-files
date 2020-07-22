@@ -1448,6 +1448,9 @@ if local_creds != True:
     except:
         log('Unable to get ddb creds from router')
         log('... exiting')
+        vlpurn = get_vlp_urn()
+        payload = {"text": f"*WARNING - Could not get ddb creds for the pod with VLP URN: {vlpurn}*"}
+        send_slack_notification(payload)
         sys.exit()
     log('Got ddb creds from router')
     json_data = json.loads(keyfile)
