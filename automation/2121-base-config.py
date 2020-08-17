@@ -2,7 +2,7 @@ import urllib3
 import sys
 import re
 import subprocess
-from time import strftime
+from time import strftime, sleep
 import calendar
 import datetime
 from random import seed, randint
@@ -479,7 +479,6 @@ def create_labauto_project():
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = response.json()
         log('- Successfully created the Lab Automation project')
     else:
         log('- Failed to create the Lab Automation project')
@@ -543,7 +542,6 @@ def create_odyssey_project(vsphere, aws, azure):
     response = requests.post(api_url, headers=headers1,
                              data=json.dumps(data), verify=False)
     if response.status_code == 201:
-        json_data = response.json()
         log('- Successfully created the Odyssey Project')
     else:
         log('- Failed to create the Odyssey Project')
@@ -1514,38 +1512,28 @@ if hol:
         log('You do not need to run this script again')
         sys.exit()
 
-    assigned_pod = get_available_pod()
+    assigned_pod = get_available_pod()  # find an available credential set
+    cred_set = assigned_pod[0]
+    unreserved_count = assigned_pod[1]
+    available_count = assigned_pod[2]
+    keys = get_creds(cred_set, vlp)
+    log(f'cred set: {cred_set}')
+    awsid = keys['aws_access_key']
+    awssec = keys['aws_secret_key']
+    azsub = keys['azure_subscription_id']
+    azten = keys['azure_tenant_id']
+    azappkey = keys['azure_application_key']
+    azappid = keys['azure_application_id']
 
-    if assigned_pod[0] == 'T0':
-        # no pod credentials are available
-        log('\n\n\nWARNING - No Hands On Labs public cloud credentials are available now!!')
-        log('There is a limited set of credentials available to share across active labs and they are all in use')
-        log('Please either wait a bit and run this script again or end this lab and try again later')
-        payload = {
-            "text": f"*WARNING - There are no credential sets available for {lab_user}*"}
-        send_slack_notification(payload)
-        sys.exit()
+    if available_count > 0:
+        available_count = available_count-1
 
-    else:
-        # we have available pod credentials - let's get them
-        cred_set = assigned_pod[0]
-        unreserved_count = assigned_pod[1]
-        available_count = assigned_pod[2]
-        keys = get_creds(assigned_pod[0], vlp)
-        log(f'cred set: {cred_set}')
-        awsid = keys['aws_access_key']
-        awssec = keys['aws_secret_key']
-        azsub = keys['azure_subscription_id']
-        azten = keys['azure_tenant_id']
-        azappkey = keys['azure_application_key']
-        azappid = keys['azure_application_id']
-
-        # build and send Slack notification
-        info = ""
-        info += (f'*Credential set {cred_set} was assigned to the {vlp} VLP urn* \n')
-        info += (f'- There are {(available_count-1)} sets remaining out of {unreserved_count} available \n')
-        payload = {"text": info}
-        send_slack_notification(payload)
+    # build and send Slack notification
+    info = ""
+    info += (f'*Credential set {cred_set} was assigned to the {vlp} VLP urn* \n')
+    info += (f'- There are {available_count} sets remaining out of {unreserved_count} available \n')
+    payload = {"text": info}
+    send_slack_notification(payload)
 
 log('\nPublic cloud credentials found. Configuring vRealize Automation\n')
 
@@ -1638,6 +1626,7 @@ access_key = get_token("holuser", "VMware1!")
 headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
+time.sleep(10)
 log('Deploying vSphere VM')
 catalog_item = get_cat_id('Ubuntu 18')
 deploy_cat_item(catalog_item, hol_project)
