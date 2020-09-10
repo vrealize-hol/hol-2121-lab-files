@@ -1,6 +1,8 @@
 # test PS calling Python
+cls
+
 $path = Get-Location
-$cmd = 'python $path\template.py -q 1.1.1.1'
+$cmd = 'python $path\template.py -q 1.1.1.3'
 Try {
     $output = Invoke-Expression -Command $cmd -ErrorVariable errorVar
 }
@@ -19,3 +21,4 @@ if ($output -clike 'PASS*') {
 }
 
 Write-Output $output  # This will write everything passed back through the pipeline from the Python script
+
