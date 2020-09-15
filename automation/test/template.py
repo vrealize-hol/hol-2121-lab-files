@@ -10,8 +10,20 @@ api_url_base = "https://vr-automation.corp.local/"
 apiVersion = "2019-01-15"
 user_name = "vcapadmin"
 pass_word = "VMware1!"
-message = ""
-message += (f'Credentials used for vRA API authentication are: {user_name}, {pass_word}\n')
+
+### CLASSES
+class color:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
+#print(color.BOLD + 'Hello World !' + color.END)
 
 ### FUNCTIONS
 def getarg():
@@ -276,23 +288,37 @@ def get_pricing_card_details(id, cpu, mem, storage, match):
         return False, fcnlog
 
 def scratch():
-    proj_match_name = 'mercury'
-    proj_list, proj_ids, proj_count = get_projects(proj_match_name)
     url_filter = "pricingCardId eq '23f28fff-cda4-4d5d-9ece-baf16b14c537'"
-    api_url = '{0}price/api/private/pricing-card-assignments?$filter={1}'.format(api_url_base, url_filter)
-    #api_url = '{0}price/api/private/pricing-cards'.format(api_url_base, url_filter)
+    #api_url = '{0}price/api/private/pricing-card-assignments?$filter={1}'.format(api_url_base, url_filter)
+    fcnlog = ''
+    api_url = '{0}iaas/api/images'.format(api_url_base, url_filter)
     response = requests.get(api_url, headers=headers, verify=False)
     if response.status_code == 200:
         json_data = response.json()
-        content = json_data["content"][0]
-        print(json_data)
+        content = json_data["content"]
+        region_count = len(content)
+        for x in range(region_count):
+            item = content[x]
+            if item["externalRegionId"] == 'Datacenter:datacenter-21': # This is the Private Cloud region
+                mapping = item["mapping"]
+                for key in mapping.keys():
+                    if "windows server 2019" in key.lower():  # Image has correct name
+                        if mapping[key]["name"] == 'windows2019':   # Image is mapped to correct vSphere template
+                            fcnlog += f'Found image named {key} mapped to the vSphere windows2019 template\n'
+                            return True, fcnlog
+                        else:
+                            fcnlog += f'*** Found image named {key} but it IS NOT mapped to the vSphere windows2019 template\n'
+                            return False, fcnlog
+                else:
+                    fcnlog += f'*** Did not find an image named Windows Server 2019\n'
+                    return False, fcnlog
 
 ### One function per exam point is defined below
-def q_1_1_1_1():
+def q_4_5_1_1():
     cz_match_name = 'mercury aws'  # name of the cloud zone that user should have created
     cz_placement_policy = 'DEFAULT'
     cz_capability_tags = [{'key': 'region', 'value': 'us-west2'}]
-    log = f'Function started\n'
+    log = f'Function {q_4_5_1_1.__name__} started\n'
     log += f'Getting cloud zones and looking for a match with: {cz_match_name}\n'
     zone_list, cz_ids, cz_count = get_cloud_zones(cz_match_name)
     if cz_count == 1:  # we found one match - proceed
@@ -310,12 +336,12 @@ def q_1_1_1_1():
         log += 'returning error to PowerShell'
         return('ERROR: There are multiple cloud zones matching the name', log)
 
-def q_1_1_1_2():
+def q_4_6_1_2():
     proj_match_name = 'mercury'  # match string in name of the project that user should have created
     proj_members = [{'email': 'Project Mercury Users@corp.local@corp.local'}]
     proj_admins = [{'email': 'Project Mercury Admins@corp.local@corp.local'}]
     proj_zones = []  # list of zones expected to be attached to the project
-    log = f'Function started\n'
+    log = f'Function {q_4_6_1_2.__name__} started\n'
     log += f'Getting projects and looking for a match with: {proj_match_name}\n'
     proj_list, proj_ids, proj_count = get_projects(proj_match_name)
     if proj_count ==1: # found one match - proceed
@@ -350,12 +376,12 @@ def q_1_1_1_2():
         log += 'returning error to PowerShell'
         return('ERROR: There are multiple projects matching the name', log)
 
-def q_1_1_1_3():
+def q_4_11_1_3():
     match_name = 'mercury'  # name of the project and pricing card that user should have created
     pc_cpu = {'baseRate': 10.0, 'chargeBasedOn': 'USAGE', 'chargeOnPowerState': 'ONLY_WHEN_POWERED_ON', 'chargePeriod': 'MONTHLY'}
     pc_mem = {'baseRate': 5.0, 'chargeBasedOn': 'USAGE', 'chargeOnPowerState': 'ONLY_WHEN_POWERED_ON', 'chargePeriod': 'MONTHLY', 'unit': 'gb'}
     pc_storage = {'baseRate': 1.0, 'chargeBasedOn': 'USAGE', 'chargeOnPowerState': 'ALWAYS', 'chargePeriod': 'MONTHLY', 'unit': 'gb'}
-    log = f'Function started\n'
+    log = f'Function {q_4_11_1_3.__name__} started\n'
     log += f'Getting pricing cards and looking for a match with: {match_name}\n'
     pc_list, pc_ids, pc_count = get_pricing_cards(match_name)
     if pc_count == 1: # found one match - proceed
@@ -373,27 +399,87 @@ def q_1_1_1_3():
         log += 'returning error to PowerShell'
         return('ERROR: There are multiple pricing cards matching the name', log)
 
+def q_4_7_3_1():
+    # Checks that an image mapping was created per the instructions
+    log = f'Function {q_4_7_3_1.__name__} started\n'
+    log += 'Getting image mappings\n'
+    api_url = '{0}iaas/api/images'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        content = json_data["content"]
+        region_count = len(content)
+        for x in range(region_count):
+            item = content[x]
+            if item["externalRegionId"] == 'Datacenter:datacenter-21': # This is the Private Cloud region
+                log += 'Checking the image mappings for the Private Cloud region\n'
+                mapping = item["mapping"]
+                for key in mapping.keys():
+                    if "windows server 2019" in key.lower():  # Image has correct name
+                        log += f'Image Mapping named {key} was found\n'
+                        if mapping[key]["name"] == 'windows2019':   # Image is mapped to correct vSphere template
+                            log += f'Mapped to the template named {mapping[key]["name"]}\n'
+                            return('PASS', log)
+                        else:
+                            log += f'*** Image Mapping IS NOT mapped to the vSphere windows2019 template\n'
+                            return ('FAIL', log)
+    log += f'*** Did not find an image mapping named Windows Server 2019 mapped to the Private Cloud region\n'
+    return ('FAIL', log)
+
+def q_4_8_3_2():
+    # Checks that a flavor mapping was created per the instructions
+    log = f'Function {q_4_8_3_2.__name__} started\n'
+    log += 'Getting flavor mappings\n'
+    api_url = '{0}iaas/api/flavors'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        content = json_data["content"]
+        region_count = len(content)
+        for x in range(region_count):
+            item = content[x]
+            if item["externalRegionId"] == 'Datacenter:datacenter-21': # This is the Private Cloud region
+                log += 'Checking the flavor mappings for the Private Cloud region\n'
+                mapping = item["mapping"]
+                for key in mapping.keys():
+                    if "extra large" in key.lower():  # Flavor has correct name
+                        log += f'Flavor Mapping named {key} was found\n'
+                        if mapping[key]["cpuCount"] == 4:   
+                            log += f'Flavor has 4 CPUs\n'
+                        else:
+                            log += f'*** Flavor DOES NOT have 4 CPUs. It is configured with {mapping[key]["cpuCount"]}.\n'
+                            return ('FAIL', log)
+                        if mapping[key]["memoryInMB"] == 16384:
+                            log += f'Flavor has 16 GB of memory\n'
+                            return('PASS', log)
+                        else:
+                            log += f'*** Flavor DOES NOT have 16384 MB of memory. It is configured with {mapping[key]["memoryInMB"]}.\n'
+                            return ('FAIL', log)
+    log += f'*** Did not find a flavor mapping named extra large mapped to the Private Cloud region\n'
+    return ('FAIL', log)
+
 ### MAIN
+message = 'Beginning the Python Script\n'
 arg = getarg().examquestion  # parse the arguemnt passed to the script - this is the exam question being tested
-#arg = '1.1.1.3'
+#arg = '4.8.3.2'
 message += f'{arg} was passed to Python as the question to test\n'
 
-# table of question number input to the function name for that question number
+# table of question number input to the function object for that question point identifier
 functions = {       
-    '1.1.1.1': q_1_1_1_1,
-    '1.1.1.2': q_1_1_1_2,
-    '1.1.1.3': q_1_1_1_3
+    '4.5.1.1': q_4_5_1_1,
+    '4.6.1.2': q_4_6_1_2,
+    '4.11.1.3': q_4_11_1_3,
+    '4.7.3.1': q_4_7_3_1,
+    '4.8.3.2': q_4_8_3_2
     }
 
 # find out if vRA is ready. if not ready we can't make API calls
 access_key = get_token()
 if access_key == 'error':  # Couldn't reach vRA
     message += f'ERROR: Could not contact the vRA API\n'
-    print(message)
     sys.exit()
 elif access_key == 'not ready':  # we are not even getting an auth token from vRA so we can't auth to the API
     message += (f'ERROR: Could not get API token from vRA\n')
-    print(message)
     sys.exit()
 else:
     # build the API header content
@@ -401,11 +487,16 @@ else:
                 'Authorization': 'Bearer {0}'.format(access_key)}
     message += f'Got API token from vRA\n'
 
+"""
+scratch()
+sys.exit()
+"""
+
 try:
     # call the function based on the question number
     # put results of the test in 'result' variable
     fcn = functions[(arg)]  # reference to the Python function object
-    message += f'calling {fcn}\n'
+    message += f'Calling function {fcn.__name__}\n'
     result, func_msg = fcn()
     message = f'{result}\n' + message  # prepend the result to the message to be returned
     message += func_msg  # append messages from the function
