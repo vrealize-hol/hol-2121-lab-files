@@ -4,36 +4,16 @@ import json
 import sys
 import argparse
 import re
-<<<<<<< HEAD
 import inspect
 import yaml
 from deepdiff import DeepDiff
-=======
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
 urllib3.disable_warnings()
 
 api_url_base = "https://vr-automation.corp.local/"
 apiVersion = "2019-01-15"
 user_name = "vcapadmin"
 pass_word = "VMware1!"
-<<<<<<< HEAD
 script_location = "C:/hol-2121-lab-files/automation/test/"
-=======
-
-### CLASSES
-class color:
-   PURPLE = '\033[95m'
-   CYAN = '\033[96m'
-   DARKCYAN = '\033[36m'
-   BLUE = '\033[94m'
-   GREEN = '\033[92m'
-   YELLOW = '\033[93m'
-   RED = '\033[91m'
-   BOLD = '\033[1m'
-   UNDERLINE = '\033[4m'
-   END = '\033[0m'
-#print(color.BOLD + 'Hello World !' + color.END)
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
 
 ### FUNCTIONS
 def getarg():
@@ -297,7 +277,6 @@ def get_pricing_card_details(id, cpu, mem, storage, match):
     else:   # API call failed
         return False, fcnlog
 
-<<<<<<< HEAD
 def get_blueprint_id(bpName):
     # finds the ID of the blueprint matching the passed name
     api_url = '{0}blueprint/api/blueprints'.format(api_url_base)
@@ -361,8 +340,6 @@ def log_diffs(diffs):
     is_diff = is_changed or is_missing or is_extra
     return is_diff, fcnlog
 
-=======
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
 def scratch():
     url_filter = "pricingCardId eq '23f28fff-cda4-4d5d-9ece-baf16b14c537'"
     #api_url = '{0}price/api/private/pricing-card-assignments?$filter={1}'.format(api_url_base, url_filter)
@@ -394,11 +371,7 @@ def q_4_5_1_1():
     cz_match_name = 'mercury aws'  # name of the cloud zone that user should have created
     cz_placement_policy = 'DEFAULT'
     cz_capability_tags = [{'key': 'region', 'value': 'us-west2'}]
-<<<<<<< HEAD
     log = f'Function {inspect.stack()[0][3]} started\n'
-=======
-    log = f'Function {q_4_5_1_1.__name__} started\n'
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
     log += f'Getting cloud zones and looking for a match with: {cz_match_name}\n'
     zone_list, cz_ids, cz_count = get_cloud_zones(cz_match_name)
     if cz_count == 1:  # we found one match - proceed
@@ -421,11 +394,7 @@ def q_4_6_1_2():
     proj_members = [{'email': 'Project Mercury Users@corp.local@corp.local'}]
     proj_admins = [{'email': 'Project Mercury Admins@corp.local@corp.local'}]
     proj_zones = []  # list of zones expected to be attached to the project
-<<<<<<< HEAD
     log = f'Function {inspect.stack()[0][3]} started\n'
-=======
-    log = f'Function {q_4_6_1_2.__name__} started\n'
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
     log += f'Getting projects and looking for a match with: {proj_match_name}\n'
     proj_list, proj_ids, proj_count = get_projects(proj_match_name)
     if proj_count ==1: # found one match - proceed
@@ -465,11 +434,7 @@ def q_4_11_1_3():
     pc_cpu = {'baseRate': 10.0, 'chargeBasedOn': 'USAGE', 'chargeOnPowerState': 'ONLY_WHEN_POWERED_ON', 'chargePeriod': 'MONTHLY'}
     pc_mem = {'baseRate': 5.0, 'chargeBasedOn': 'USAGE', 'chargeOnPowerState': 'ONLY_WHEN_POWERED_ON', 'chargePeriod': 'MONTHLY', 'unit': 'gb'}
     pc_storage = {'baseRate': 1.0, 'chargeBasedOn': 'USAGE', 'chargeOnPowerState': 'ALWAYS', 'chargePeriod': 'MONTHLY', 'unit': 'gb'}
-<<<<<<< HEAD
     log = f'Function {inspect.stack()[0][3]} started\n'
-=======
-    log = f'Function {q_4_11_1_3.__name__} started\n'
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
     log += f'Getting pricing cards and looking for a match with: {match_name}\n'
     pc_list, pc_ids, pc_count = get_pricing_cards(match_name)
     if pc_count == 1: # found one match - proceed
@@ -489,11 +454,7 @@ def q_4_11_1_3():
 
 def q_4_7_3_1():
     # Checks that an image mapping was created per the instructions
-<<<<<<< HEAD
     log = f'Function {inspect.stack()[0][3]} started\n'
-=======
-    log = f'Function {q_4_7_3_1.__name__} started\n'
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
     log += 'Getting image mappings\n'
     api_url = '{0}iaas/api/images'.format(api_url_base)
     response = requests.get(api_url, headers=headers, verify=False)
@@ -520,11 +481,7 @@ def q_4_7_3_1():
 
 def q_4_8_3_2():
     # Checks that a flavor mapping was created per the instructions
-<<<<<<< HEAD
     log = f'Function {inspect.stack()[0][3]} started\n'
-=======
-    log = f'Function {q_4_8_3_2.__name__} started\n'
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
     log += 'Getting flavor mappings\n'
     api_url = '{0}iaas/api/flavors'.format(api_url_base)
     response = requests.get(api_url, headers=headers, verify=False)
@@ -554,7 +511,6 @@ def q_4_8_3_2():
     log += f'*** Did not find a flavor mapping named extra large mapped to the Private Cloud region\n'
     return ('FAIL', log)
 
-<<<<<<< HEAD
 def q_7_3_3_3():
     # multiple checks required for this point
     # 1). check that the base blueprint was imported
@@ -585,18 +541,14 @@ def q_7_3_3_3():
             return('FAIL', log)
     log += f'The imported blueprint matches the base reference yaml\n'
     log += 'Test #1 successful\n\n'
+    test1 = True
+    # 2). check that the base blueprint was cloned
     return('PASS', log)
 
 ### MAIN
 message = 'Beginning the Python Script\n'
 #arg = getarg().examquestion  # parse the arguemnt passed to the script - this is the exam question being tested
 arg = '7.3.3.3'
-=======
-### MAIN
-message = 'Beginning the Python Script\n'
-arg = getarg().examquestion  # parse the arguemnt passed to the script - this is the exam question being tested
-#arg = '4.8.3.2'
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
 message += f'{arg} was passed to Python as the question to test\n'
 
 # table of question number input to the function object for that question point identifier
@@ -605,12 +557,8 @@ functions = {
     '4.6.1.2': q_4_6_1_2,
     '4.11.1.3': q_4_11_1_3,
     '4.7.3.1': q_4_7_3_1,
-<<<<<<< HEAD
     '4.8.3.2': q_4_8_3_2,
     '7.3.3.3': q_7_3_3_3
-=======
-    '4.8.3.2': q_4_8_3_2
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
     }
 
 # find out if vRA is ready. if not ready we can't make API calls
@@ -627,14 +575,6 @@ else:
                 'Authorization': 'Bearer {0}'.format(access_key)}
     message += f'Got API token from vRA\n'
 
-<<<<<<< HEAD
-=======
-"""
-scratch()
-sys.exit()
-"""
-
->>>>>>> d5fa37627a554d5d2a82c52f75b1beb313101e51
 try:
     # call the function based on the question number
     # put results of the test in 'result' variable
