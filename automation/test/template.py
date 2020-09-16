@@ -301,6 +301,14 @@ def get_bp_content(bp_id):
         json_data = response.json()
         return json_data["content"]
 
+def get_bp_version_content(bp_id, version_id):
+    # returns the blueprint yaml based on the blueprint ID
+    api_uri = '{0}blueprint/api/blueprints/{1}/versions/{2}'.format(api_url_base, bp_id, version_id)
+    response = requests.get(api_uri, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        return json_data["content"]
+
 def log_diffs(diffs):
     is_changed = False
     is_missing = False
@@ -512,11 +520,11 @@ def q_4_8_3_2():
     return ('FAIL', log)
 
 def q_7_3_3_3():
+    log = f'Function {inspect.stack()[0][3]} started\n'
     # multiple checks required for this point
     # 1). check that the base blueprint was imported
     bp_match_name = 'Jupiter Ubuntu'
     base_bp_file = script_location + 'q3_base_bp.yml'     # location of the refrence yaml for the base blueprint
-    log = f'Function {inspect.stack()[0][3]} started\n'
     log += '\nTest #1 check that base blueprint was imported\n'
     log += 'Getting matching bluerint ID\n'
     bpId, fcnlog = get_blueprint_id(bp_match_name)
@@ -541,8 +549,59 @@ def q_7_3_3_3():
             return('FAIL', log)
     log += f'The imported blueprint matches the base reference yaml\n'
     log += 'Test #1 successful\n\n'
-    test1 = True
-    # 2). check that the base blueprint was cloned
+    # 2). check that there is a Jupiter Agnostic blueprint
+    bp_match_name = 'Jupiter Agnostic'
+    base_bp_file = script_location + 'q3_base_bp.yml'     # location of the refrence yaml for the base blueprint
+    log += 'Test #2 check for a Jupiter Agnostic blueprint\n'
+    log += 'Getting matching bluerint ID\n'
+    bpId, fcnlog = get_blueprint_id(bp_match_name)
+    log += fcnlog
+    if bpId == 'no match':   # No blueprint was found matching the name
+        return('FAIL', log)
+    log += 'Test #2 successful\n\n'
+    # 3). check that Jupiter Agnostic has been versioned and that a version matches the base bluprint
+    #       if more than one version, will check the one with the earliest 
+    log += 'Test #3 check that agnostic blueprint was versioned and was done so before making changes\n'
+    log += f'Checking for versions of blueprint ID {bpId}\n'
+    api_uri = '{0}blueprint/api/blueprints/{1}/versions'.format(api_url_base, bpId)
+    response = requests.get(api_uri, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()    
+        content = json_data["content"]
+        version_count = len(content)
+        if version_count == 0:  # no bluerint versions found
+            log += f'*** No versions found for blueprint ID {bpId}\n'
+            return('FAIL', log)
+        elif version_count > 1:
+            log += 'More than one blueprint version found. Getting the oldest one\n'
+            version_time = content[0]["createdAt"]
+            version = content[0]["version"]
+            version_id = content[0]["id"]
+            for i in range(version_count):
+                a = i
+                this_time = content[i]["createdAt"]
+                if this_time < version_time:    # found an earlier version
+                    version_time = this_time
+                    version = content[i]["version"]
+                    version_id = content[i]["id"]
+            log += f'The oldest blueprint version is: {version}. It was created at {version_time}\n'
+        else:
+            log += 'One blueprint version found\n'
+            version = content[0]["version"]
+            version_id = content[0]["id"]
+    log += f'Getting the yaml for blueprint ID {bpId} version {version}\n'
+    bp_content = get_bp_version_content(bpId, version_id)   # yaml for the matched blueprint
+    bp = yaml.safe_load(bp_content)
+    log += 'Comparing the versioned blueprint with the reference yaml file\n'
+    bp_diff = DeepDiff(ref_bp, bp, ignore_order=True)
+    if bp_diff != {}:    # the yaml does not match but it might just be added metadata
+        changed, msg = log_diffs(bp_diff)
+        if changed:
+            log += f'*** The versioned blueprint DOES NOT match the base reference yaml\n'
+            log += msg
+            return('FAIL', log)
+    log += f'The versioned blueprint matches the reference yaml\n'
+    log += 'Test #3 successful\n'
     return('PASS', log)
 
 ### MAIN
