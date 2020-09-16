@@ -1,5 +1,5 @@
 # test PS calling Python
-cls
+Clear-Host
 
 $path = Get-Location
 $cmd = 'python $path\template.py -q 7.3.3.3'

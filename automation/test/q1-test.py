@@ -345,6 +345,9 @@ class OdysseyTestCases(unittest.TestCase):
         self.assertEqual(machineResourceExists, self.Task1BlueprintMachineExistsBool, "Cannot verify machine component for Task1")
        
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
     #   using the failfast parameter means it will stop after the first failed test
-    unittest.main(failfast=True, verbosity=2)
+#    unittest.main(failfast=True, verbosity=2)
+
+### MAIN TESTING
+
