@@ -521,10 +521,11 @@ def q_4_8_3_2():
 
 def q_7_3_3_3():
     log = f'Function {inspect.stack()[0][3]} started\n'
+    log += 'A total of three tests must pass in order to get this point'
     # multiple checks required for this point
     # 1). check that the base blueprint was imported
     bp_match_name = 'Jupiter Ubuntu'
-    base_bp_file = script_location + 'q3_base_bp.yml'     # location of the refrence yaml for the base blueprint
+    bp_file = script_location + 'q3_base_bp.yml'     # location of the refrence yaml for the base blueprint
     log += '\nTest #1 check that base blueprint was imported\n'
     log += 'Getting matching bluerint ID\n'
     bpId, fcnlog = get_blueprint_id(bp_match_name)
@@ -535,8 +536,8 @@ def q_7_3_3_3():
     bp_content = get_bp_content(bpId)   # yaml for the matched blueprint
     bp = yaml.safe_load(bp_content)
     # open the reference file
-    log += f'Opening the reference yaml file: {base_bp_file}\n'
-    with open(base_bp_file, 'r') as stream:
+    log += f'Opening the reference yaml file: {bp_file}\n'
+    with open(bp_file, 'r') as stream:
         temp = stream.read()
         ref_bp = yaml.safe_load(temp)
     log += 'Comparing the base blueprint with the reference yaml file\n'
@@ -544,14 +545,14 @@ def q_7_3_3_3():
     if bp_diff != {}:    # the yaml does not match but it might just be added metadata
         changed, msg = log_diffs(bp_diff)
         if changed:
-            log += f'*** The imported base blueprint DOES NOT match the base reference yaml\n'
+            log += f'*** The Jupiter Agnostic blueprint DOES NOT match the reference yaml\n'
             log += msg
             return('FAIL', log)
     log += f'The imported blueprint matches the base reference yaml\n'
     log += 'Test #1 successful\n\n'
     # 2). check that there is a Jupiter Agnostic blueprint
     bp_match_name = 'Jupiter Agnostic'
-    base_bp_file = script_location + 'q3_base_bp.yml'     # location of the refrence yaml for the base blueprint
+    bp_file = script_location + 'q3_base_bp.yml'     # location of the refrence yaml for the base blueprint
     log += 'Test #2 check for a Jupiter Agnostic blueprint\n'
     log += 'Getting matching bluerint ID\n'
     bpId, fcnlog = get_blueprint_id(bp_match_name)
@@ -604,10 +605,40 @@ def q_7_3_3_3():
     log += 'Test #3 successful\n'
     return('PASS', log)
 
+def q_7_31_3_4():
+    bp_file = script_location + 'q3_final_bp.yml'     # location of the refrence yaml for the Q3 final blueprint
+    log = f'Function {inspect.stack()[0][3]} started\n'
+    # loads the Jupiter Angnostic Ubuntu Server blueprint yaml and parses for several required parts
+    bp_match_name = 'Jupiter Agnostic'
+    log += 'Checking for a Jupiter Agnostic blueprint\n'
+    log += 'Getting matching bluerint ID\n'
+    bpId, fcnlog = get_blueprint_id(bp_match_name)
+    log += fcnlog
+    if bpId == 'no match':   # No blueprint was found matching the name
+        return('FAIL', log)
+    log += f'Getting the yaml for blueprint ID: {bpId}\n'
+    bp_content = get_bp_content(bpId)   # yaml for the matched blueprint
+    bp = yaml.safe_load(bp_content)    
+    # open the reference file
+    log += f'Opening the reference yaml file: {bp_file}\n'
+    with open(bp_file, 'r') as stream:
+        temp = stream.read()
+        ref_bp = yaml.safe_load(temp)
+    log += 'Comparing the agnostic blueprint with the reference yaml file\n'
+    bp_diff = DeepDiff(ref_bp, bp, ignore_order=True, ignore_string_case=True)
+    if bp_diff != {}:    # the yaml does not match but it might just be added metadata
+        changed, msg = log_diffs(bp_diff)
+        if changed:
+            log += f'*** The imported agnostic blueprint DOES NOT match the reference yaml\n'
+            log += msg
+            return('FAIL', log)
+    log += f'The imported agnostic blueprint matches the base reference yaml\n'
+    return('PASS', log)
+
 ### MAIN
 message = 'Beginning the Python Script\n'
 #arg = getarg().examquestion  # parse the arguemnt passed to the script - this is the exam question being tested
-arg = '7.3.3.3'
+arg = '7.31.3.4'
 message += f'{arg} was passed to Python as the question to test\n'
 
 # table of question number input to the function object for that question point identifier
@@ -617,7 +648,8 @@ functions = {
     '4.11.1.3': q_4_11_1_3,
     '4.7.3.1': q_4_7_3_1,
     '4.8.3.2': q_4_8_3_2,
-    '7.3.3.3': q_7_3_3_3
+    '7.3.3.3': q_7_3_3_3,
+    '7.31.3.4': q_7_31_3_4
     }
 
 # find out if vRA is ready. if not ready we can't make API calls

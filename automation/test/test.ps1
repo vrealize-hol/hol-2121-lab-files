@@ -2,7 +2,7 @@
 Clear-Host
 
 $path = Get-Location
-$cmd = 'python $path\template.py -q 7.3.3.3'
+$cmd = 'python C:\hol-2121-lab-files\automation\test\template.py -q 7.31.3.4'
 Try {
     $output = Invoke-Expression -Command $cmd -ErrorVariable errorVar
 }
