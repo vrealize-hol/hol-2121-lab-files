@@ -711,7 +711,7 @@ def q_4_9_4_1():
         log += f'*** Network default gateway {netGateway} DOES NOT MATCH 172.16.15.1\n'
         return('FAIL', log)
     log += f'The configuration for the {netName} network is correct\n'
-    log += f'Checking the IP range associated with the {netName} network\n'
+    log += f'Determining the IP range associated with the {netName} network\n'
     api_uri = '{0}iaas/api/network-ip-ranges'.format(api_url_base)
     response = requests.get(api_uri, headers=headers, verify=False)
     if response.status_code == 200:
@@ -727,8 +727,16 @@ def q_4_9_4_1():
         log += f'*** No IP range was found attached to the {netName} network\n'
         return('FAIL', log)
     log += f'Checking the IP range attached to the {netName} network\n'
-
-    
+    if rangeName.lower() != 'all ips':
+        log += f'*** The IP range name {rangeName} DOES NOT MATCH "All IPs"\n'
+        return('FAIL', log)
+    if rangeStart != '172.16.15.5':
+        log += f'*** The IP range {rangeName} start address DOES NOT MATCH 172.16.15.5\n'
+        return('FAIL', log)
+    if rangeEnd != '172.16.15.250':
+        log += f'*** The IP range {rangeName} end address DOES NOT MATCH 172.16.15.250\n'
+        return('FAIL', log)
+    log += 'Finished checking the IP Range\n'
     return('PASS', log)
 
 ### MAIN
