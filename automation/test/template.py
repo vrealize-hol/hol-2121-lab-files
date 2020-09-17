@@ -348,6 +348,31 @@ def log_diffs(diffs):
     is_diff = is_changed or is_missing or is_extra
     return is_diff, fcnlog
 
+def get_net_profile(npName):
+    # finds the ID of the network profile matching the passed name
+    api_url = '{0}iaas/api/network-profiles'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        content = json_data["content"]
+        npCount = len(content)
+        fcn_log = f'Looking for a network profile name matching: {npName.lower()}\n'
+        for x in range(npCount):
+            if npName.lower() in content[x]["name"].lower():
+                fcn_log += f'Found network profile named: {content[x]["name"]} with ID {content[x]["id"]}\n'
+                nProfile = get_net_profile_content(content[x]["id"])
+                return(nProfile, fcn_log)
+    fcn_log += f'*** Failed to find a network profile name matching: {npName.lower()}\n'
+    return('no match', fcn_log)
+
+def get_net_profile_content(npId):
+    # returns the network profile details based on the profile ID
+    api_uri = '{0}iaas/api/network-profiles/{1}'.format(api_url_base, npId)
+    response = requests.get(api_uri, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        return json_data
+
 def scratch():
     url_filter = "pricingCardId eq '23f28fff-cda4-4d5d-9ece-baf16b14c537'"
     #api_url = '{0}price/api/private/pricing-card-assignments?$filter={1}'.format(api_url_base, url_filter)
@@ -635,10 +660,81 @@ def q_7_31_3_4():
     log += f'The imported agnostic blueprint matches the base reference yaml\n'
     return('PASS', log)
 
+def q_4_9_4_1():
+    # check for that the network profile has been correctly created
+    np_name = 'phobos'
+    log = f'Function {inspect.stack()[0][3]} started\n'
+    log += f'Looking for a network profile name match with: {np_name}\n'
+    np, flog = get_net_profile(np_name)
+    log += flog
+    if np == 'no match':
+        return('FAIL', log)
+    npID = np['id']
+    npName = np['name']
+    log += f'Checking tags on the {npName} network profile\n'
+    try:
+        npTags = np['tags']
+    except:
+        log += f'*** There are NO TAGS on the {npName} network profile\n'
+        return('FAIL', log)
+    if {'key': 'net', 'value': 'phobos'} not in npTags:
+        log += f'*** The network profile tags are wrong. They are: {npTags}\n'
+        return('FAIL', log)
+    log += f'Checking networks associated with the {npName} network profile\n'
+    try:
+        netId = np['_links']['fabric-networks']['hrefs'][0]
+    except:
+        log += f'*** There is no network attached to the {npName} network profile\n'
+        return('FAIL', log)
+    netId = netId.split("/")[4]  # the id of the fabric network
+    log += f'Getting fabric network information for associated network\n'
+    api_url = '{0}iaas/api/fabric-networks-vsphere/{1}'.format(api_url_base, netId)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+    netName = json_data['name']
+    if 'nsx-phobos-external' not in netName:
+        log += f'*** The attached network is {netName}, not nsx-phobos-esternal\n'
+        return('FAIL', log)
+    log += f'Found the {netName} network attached to the network profile\n'
+    log += f'Checking network configuration for {netName}\n'
+    netDomain = json_data['domain']
+    netCidr = json_data['cidr']
+    netGateway = json_data['defaultGateway']
+    if netDomain != 'corp.local':
+        log += f'*** Domain {netDomain} DOES NOT MATCH corp.local\n'
+        return('FAIL', log)
+    if netCidr != '172.16.15.0/24':
+        log += f'*** Network CIDR {netCidr} DOES NOT MATCH 172.16.15.0/24\n'
+        return('FAIL', log)
+    if netGateway != '172.16.15.1':
+        log += f'*** Network default gateway {netGateway} DOES NOT MATCH 172.16.15.1\n'
+        return('FAIL', log)
+    log += f'The configuration for the {netName} network is correct\n'
+    log += f'Checking the IP range associated with the {netName} network\n'
+    api_uri = '{0}iaas/api/network-ip-ranges'.format(api_url_base)
+    response = requests.get(api_uri, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        content = json_data['content']
+    rangeName = 'not found'
+    for i in range(len(content)):
+        if netId in content[i]['_links']['fabric-network']['href']:
+            rangeName = content[i]['name']
+            rangeStart = content[i]['startIPAddress']
+            rangeEnd = content[i]['endIPAddress']
+    if rangeName == 'not found':
+        log += f'*** No IP range was found attached to the {netName} network\n'
+        return('FAIL', log)
+    log += f'Checking the IP range attached to the {netName} network\n'
+
+    
+    return('PASS', log)
+
 ### MAIN
 message = 'Beginning the Python Script\n'
 #arg = getarg().examquestion  # parse the arguemnt passed to the script - this is the exam question being tested
-arg = '7.31.3.4'
+arg = '4.9.4.1'
 message += f'{arg} was passed to Python as the question to test\n'
 
 # table of question number input to the function object for that question point identifier
@@ -649,7 +745,8 @@ functions = {
     '4.7.3.1': q_4_7_3_1,
     '4.8.3.2': q_4_8_3_2,
     '7.3.3.3': q_7_3_3_3,
-    '7.31.3.4': q_7_31_3_4
+    '7.31.3.4': q_7_31_3_4,
+    '4.9.4.1': q_4_9_4_1
     }
 
 # find out if vRA is ready. if not ready we can't make API calls
