@@ -1,0 +1,13 @@
+---
+- name: HOL-2121-04-1
+  hosts: all
+  gather_facts: true
+  vars:
+  tasks:
+    - name: Create a file in temp folder
+      lineinfile:
+        create: yes
+        owner: holuser
+        path: /tmp/ansible.txt
+        line: "root"
+

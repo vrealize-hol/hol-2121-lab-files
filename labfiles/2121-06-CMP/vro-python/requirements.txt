@@ -1,0 +1,4 @@
+nsx_python_sdk
+nsx_policy_python_sdk
+nsx_global_policy_python_sdk
+requests

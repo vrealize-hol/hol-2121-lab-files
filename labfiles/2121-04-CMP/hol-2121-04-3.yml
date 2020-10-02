@@ -1,0 +1,55 @@
+- name: HOL-2121-04-3
+  hosts: webservers
+  connection: ssh
+  gather_facts: yes
+  become: true
+  become_method: sudo
+  vars:
+  tasks:
+  - name: Create website folder
+    file:
+      path: /var/www/html
+      state: directory
+      mode: '0755'
+
+  - name: Create website CSS folder
+    file:
+      path: /var/www/html/css
+      state: directory
+      mode: '0755'
+
+  - name: Create website img folder
+    file:
+      path: /var/www/html/img
+      state: directory
+      mode: '0755'
+
+  - name: Deploy website css
+    command: mv /root/clr-ui.min.css /var/www/html/css/clr-ui.min.css
+  
+  - name: Change file ownership, group and permissions
+    file:
+      path: /var/www/html/css/clr-ui.min.css
+      owner: root
+      mode: 0755
+
+  - name: Deploy website imp
+    command: mv /root/vra-ansible.png /var/www/html/img/vra-ansible.png
+
+  - name: Change file ownership, group and permissions
+    file:
+      path: /var/www/html/img/vra-ansible.png
+      owner: root
+      mode: 0755
+
+  - name: Create index.html from template
+    template:
+      src: /etc/ansible/templates/hol-2121-04-3.html.j2
+      dest: /var/www/html/index.html
+      force: yes
+  
+  - name: Ensure Nginx service is started and enabled
+    service:
+      name: nginx
+      state: restarted
+      enabled: yes

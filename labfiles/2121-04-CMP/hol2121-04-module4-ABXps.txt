@@ -1,0 +1,18 @@
+function handler($context, $payload) {
+    Write-Host "Hello " $payload.target
+    
+    #Get the current VM name
+    $oldVMName = $payload.resourceNames[0]
+    
+    #Assign the new VM Name based on user input 
+    $newVMName = $payload.customProperties.customName
+
+    $returnObject = [PSCustomObject]@{
+        resourceNames       = $payload.resourceNames
+    }
+    $returnObject.resourceNames[0] = $newVMName
+
+    Write-Host "Changing VM name from $($oldVMName) to $($newVMName)"
+
+    return $returnObject
+}

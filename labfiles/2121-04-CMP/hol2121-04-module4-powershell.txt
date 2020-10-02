@@ -1,0 +1,52 @@
+function Handler($context, $inputs) {
+    $inputsString = $inputs | ConvertTo-Json -Compress
+
+    Write-Host "Inputs were $inputsString"
+
+    $output=@{status = 'done'}
+
+    return $output
+}
+
+#Creating the credentials
+$username="administrator@corp.local" 
+$password="VMware1!" 
+$EncryptedPassword = ConvertTo-SecureString -String “$password” -AsPlainText -Force
+$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $username, $EncryptedPassword
+#For production: implement a service account, credentials should be stored in secure strings, and certificates should be imported
+
+#Starting a session
+$sessionData = @{}
+$auth = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Credential.UserName+':'+$Credential.GetNetworkCredential().Password))
+$headers = @{
+    'Authorization' = "Basic $auth"
+}
+$json = $sessionData | ConvertTo-Json
+$response = Invoke-RestMethod -SkipCertificateCheck "https://vcsa-01a.corp.local/rest/com/vmware/cis/session" -Headers $headers -Method Post -Body $json -ContentType 'application/json'
+$sessionId = $response.value
+write-host "Session ID: " $sessionId
+
+#List the tags
+$headers = @{
+    'Authorization' = "Basic $auth"
+    'vmware-api-session-id' = $sessionId
+}
+$response = Invoke-RestMethod -SkipCertificateCheck "https://vcsa-01a.corp.local/rest/com/vmware/cis/tagging/tag" -Headers $headers -Method Get -ContentType 'application/json'
+$tagId = $response.value[0]
+write-host "First Tag ID: " $tagId
+
+#Get the tag
+$headers = @{
+    'Authorization' = "Basic $auth"
+    'vmware-api-session-id' = $sessionId
+}
+$response = Invoke-RestMethod -SkipCertificateCheck "https://vcsa-01a.corp.local/rest/com/vmware/cis/tagging/tag/id:$($tagId)" -Headers $headers -Method Get -ContentType 'application/json'
+$tagCategoryId = $response.value.category_id
+$tagDescription = $response.value.description
+$tagId = $response.value.id
+$tagName = $response.value.name
+
+write-host "Tag Name: " $tagName
+write-host "Tag Description: " $tagDescription
+write-host "Tag Category ID: " $tagCategoryId
+write-host "Tag ID: " $tagId

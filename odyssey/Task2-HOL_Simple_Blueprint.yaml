@@ -1,0 +1,19 @@
+formatVersion: 1
+inputs:
+  Flavor:
+    type: string
+    enum:
+      - large
+      - medium
+      - small
+  Image:
+    type: string
+    enum:
+      - Ubuntu18
+      - CentOS7
+resources:
+  HOL_Machine1:
+    type: Cloud.Machine
+    properties:
+      image: ${input.Image}
+      flavor: ${input.Flavor}

@@ -1,0 +1,71 @@
+# This blueprint shows various ways to enhance a blueprint via YAML with explanations of the various parameters                      *
+# There are comments throughout for your refernce.                                                                                   *
+# If you are totally new to YAML,                     *
+# then you can visit https://yaml.org/ to get more familiar with it.                                                                 *
+# References:                                                                                                                        *
+# https://docs.vmware.com/en/VMware-Cloud-Assembly/services/Using-and-Managing/GUID-12F0BC64-6391-4E5F-AA48-C5959024F3EB.html        *
+# https://blogs.vmware.com/management/2019/02/blueprinting-expressions-in-cloud-assembly.html                                        *
+# There are some blueprint code examples here:                                                                                       *
+# https://docs.vmware.com/en/VMware-Cloud-Assembly/services/Using-and-Managing/GUID-4717026E-D11A-48FE-93A9-E409A623C723.html        *
+# This blueprint will deploy 1 machine connected to a vSphere network and run scripts to configure access.                                      *
+#*************************************************************************************************************************************
+name: Blueprint with Comments
+version: 1
+# Dont forget to give your blueprint a useful name!
+formatVersion: 1
+inputs:
+  # Inputs section is where you define inputs that the user will be able to choose from at deployment time.
+  # There are a number of various methods by which we can present inputs to the user. Inputs can also influence
+  # placement decisions and configuration. There are examples below of various input types and how to use them.
+  username:
+    type: string
+    # Inputs like username and password allow the user to define these parameters at request time.
+    # These types of inputs can also be helpful for configurations within cloud-init scripts, cloud-init is 
+    # described below in the resources section of the blueprint.
+    title: Username
+    description: Username
+    default: testUser
+  password:
+    type: string
+    title: Password
+    default: VMware1!
+    encrypted: true
+    description: Password for the given username
+resources:
+  demo-machine:
+    type: Cloud.vSphere.Machine
+    metadata:
+      layoutPosition:
+        - 0
+        - 0
+    properties:
+      flavor: small
+      image: Ubuntu18
+      cloudConfig: |
+        ssh_pwauth: yes
+        chpasswd:
+          list: |
+            ${input.username}:${input.password}
+          expire: false
+        users:
+          - default
+          - name: ${input.username}
+            lock_passwd: false
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: [wheel, sudo, admin]
+            shell: '/bin/bash'
+        runcmd:
+          - echo "Defaults:${input.username}  !requiretty" >> /etc/sudoers.d/${input.username}
+          - sh -c ${'\'echo \"Welcome to Hands-On Labs!  This machine was requested by ' + env.requestedBy + '\\n\\n\" > /etc/motd\''}
+          
+      networks:
+        - network: '${resource.Cloud_vSphere_Network_1.id}'
+          assignment: static
+  Cloud_vSphere_Network_1:
+    type: Cloud.vSphere.Network
+    metadata:
+      layoutPosition:
+        - 1
+        - 0
+    properties:
+      networkType: existing
