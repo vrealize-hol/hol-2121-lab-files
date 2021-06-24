@@ -1626,7 +1626,7 @@ access_key = get_token("holuser", "VMware1!")
 headers1 = {'Content-Type': 'application/json',
             'Authorization': 'Bearer {0}'.format(access_key)}
 
-time.sleep(30)
+time.sleep(90)
 log('Deploying vSphere VM')
 catalog_item = get_cat_id('Ubuntu 18')
 deploy_cat_item(catalog_item, hol_project)
