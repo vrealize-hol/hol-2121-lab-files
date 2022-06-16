@@ -1,0 +1,9 @@
+formatVersion: 1
+inputs: {}
+resources:
+  HOL_Machine1:
+    type: Cloud.Machine
+    metadata:
+    properties:
+      image: Ubuntu18
+      flavor: small
